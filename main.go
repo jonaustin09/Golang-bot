@@ -58,7 +58,9 @@ func main() {
 	})
 
 	b.Handle(tb.OnText, func(m *tb.Message) {
-		forwardToOldBot(m.Text)
+		if m.Sender.ID == 154701187 {
+			forwardToOldBot(m.Text)
+		}
 		handleNewMessage(m, b)
 	})
 
