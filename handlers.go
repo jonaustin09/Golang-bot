@@ -87,7 +87,7 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 	Check(err)
 
 	if len(items) == 0 {
-		_, err = b.Send(m.Sender, "There is not any records yet 😒")
+		_, err = b.Send(m.Sender, "There are not any records yet 😒")
 		Check(err)
 		return
 	}

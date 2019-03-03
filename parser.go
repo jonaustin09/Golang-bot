@@ -3,6 +3,7 @@ package main
 import (
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 type myRegexp struct {
@@ -15,7 +16,7 @@ const (
 	categoryIndex = 5
 )
 
-var regex = `(?P<name>[А-ЯҐЄІЇa-яґєшії\s+]+)(?P<amount>\d+((\.|,)\d*)?)\s*(?P<category>[А-ЯҐЄІЇa-яґєшії]{0,})`
+var regex = `(?P<name>[А-ЯҐЄІЇa-яґєшії\s+]+)(?P<amount>\d+(\.|,\d*)?)\s*(?P<category>[А-ЯҐЄІЇa-яґєшії]{0,})`
 var myExp = myRegexp{regexp.MustCompile(regex)}
 
 // ParsedData contains info about message data
@@ -45,7 +46,8 @@ func GetParsedData(s string) ParsedData {
 		return parsedData
 	}
 
-	amount, err := strconv.ParseFloat(match[amountIndex], 64)
+	amount_str := strings.Replace(match[amountIndex], ",", ".", 1)
+	amount, err := strconv.ParseFloat(amount_str, 64)
 	Check(err)
 
 	parsedData.Name = match[nameIndex]
