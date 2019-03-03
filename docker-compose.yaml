@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bash /go/src/money/docker-entrypoint.sh
+    volumes:
+    - .:/go/src/money
+
