@@ -4,6 +4,8 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 // Timestamp returns unix now time
@@ -16,4 +18,20 @@ func Check(err error) {
 	if err != nil {
 		logrus.Panic(err)
 	}
+}
+
+func deleteSystemMessage(m *tb.Message, b *tb.Bot) {
+	time.Sleep(NOTIFICATIONTIMEOUT)
+	err := b.Delete(m)
+	Check(err)
+}
+
+func sendServiceMessage(to tb.Recipient, b *tb.Bot, text string) error {
+	serviceMessage, err := b.Send(to, text, tb.ModeMarkdown, tb.Silent)
+	if err != nil {
+		return err
+	}
+	go deleteSystemMessage(serviceMessage, b)
+
+	return nil
 }

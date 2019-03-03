@@ -4,18 +4,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/sirupsen/logrus"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
-
-func deleteSystemMessage(m *tb.Message, b *tb.Bot) {
-	time.Sleep(4 * time.Second)
-	err := b.Delete(m)
-	Check(err)
-}
 
 func handleStart(m *tb.Message, b *tb.Bot) {
 	var text string
@@ -55,12 +48,8 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 		text = fmt.Sprintf("`Saved: %s`", logItem.String())
 
 	}
-	serviceMessage, err := b.Send(m.Sender, text, tb.ModeMarkdown)
-	if err != nil {
-		logrus.Panic(err)
-	}
-
-	go deleteSystemMessage(serviceMessage, b)
+	err := sendServiceMessage(m.Sender, b, text)
+	Check(err)
 }
 
 func handleEdit(m *tb.Message, b *tb.Bot) {

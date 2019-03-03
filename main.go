@@ -2,6 +2,8 @@ package main
 
 import (
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -11,6 +13,9 @@ import (
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
+
+// NOTIFICATIONTIMEOUT is used for removing system notifications
+const NOTIFICATIONTIMEOUT = 4 * time.Second
 
 var db = &gorm.DB{}
 
@@ -60,5 +65,20 @@ func main() {
 		handleExport(m, b)
 	})
 
+	gracefulShutdown(b)
 	b.Start()
+}
+
+func gracefulShutdown(b *tb.Bot) {
+	sigc := make(chan os.Signal, 10)
+	signal.Notify(sigc,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+	go func() {
+		<-sigc
+		b.Stop()
+		time.Sleep(NOTIFICATIONTIMEOUT)
+	}()
 }

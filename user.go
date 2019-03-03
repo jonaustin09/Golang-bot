@@ -15,7 +15,7 @@ type User struct {
 }
 
 // Recipient to implement interface Recipient that allow to send message to
-func (user *User) Recipient() string {
+func (user User) Recipient() string {
 	return strconv.Itoa(int(user.ID))
 }
 
