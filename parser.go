@@ -16,7 +16,7 @@ const (
 	categoryIndex = 5
 )
 
-var regex = `(?P<name>[А-ЯҐЄІЇa-яґєшії\s+]+)(?P<amount>\d+(\.|,\d*)?)\s*(?P<category>[А-ЯҐЄІЇa-яґєшії]{0,})`
+var regex = `(?P<name>[А-ЯҐЄІЇa-яґєшії\s+]+)(?P<amount>\d+((\.|,)\d*)?)\s*(?P<category>[А-ЯҐЄІЇa-яґєшії]{0,})`
 var myExp = myRegexp{regexp.MustCompile(regex)}
 
 // ParsedData contains info about message data
