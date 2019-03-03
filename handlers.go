@@ -36,7 +36,7 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 	parsedData := GetParsedData(m.Text)
 	var text string
 	if !parsedData.IsValid() {
-		text = "Use the following format: `item amount`. *For example*: tea 10 [category name]"
+		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
 
 	} else {
 		logItem := LogItem{}
@@ -57,7 +57,7 @@ func handleEdit(m *tb.Message, b *tb.Bot) {
 	var text string
 	var err error
 	if !parsedData.IsValid() {
-		text = "Use the following format: `item amount`. *For example*: tea 10"
+		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
 
 	} else {
 		logItem := LogItem{}
@@ -85,6 +85,12 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 	var err error
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
 	Check(err)
+
+	if len(items) == 0 {
+		_, err = b.Send(m.Sender, "There is not any records yet 😒")
+		Check(err)
+		return
+	}
 
 	fileName := fmt.Sprintf("%v-%v-export.csv", m.Sender.ID, Timestamp())
 	file, err := os.Create(fileName)

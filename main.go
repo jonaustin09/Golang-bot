@@ -2,8 +2,6 @@ package main
 
 import (
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -27,7 +25,7 @@ func main() {
 
 	b, err := tb.NewBot(tb.Settings{
 		Token:  token,
-		Poller: &tb.LongPoller{Timeout: 3 * time.Second},
+		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
 	})
 	Check(err)
 
@@ -60,25 +58,8 @@ func main() {
 		Check(err)
 	})
 	b.Handle("/export", func(m *tb.Message) {
-		_, err := b.Send(m.Sender, "In development 💪")
-		Check(err)
 		handleExport(m, b)
 	})
 
-	gracefulShutdown(b)
 	b.Start()
-}
-
-func gracefulShutdown(b *tb.Bot) {
-	sigc := make(chan os.Signal, 10)
-	signal.Notify(sigc,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-	go func() {
-		<-sigc
-		b.Stop()
-		time.Sleep(NOTIFICATIONTIMEOUT)
-	}()
 }
