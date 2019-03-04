@@ -10,6 +10,8 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // NOTIFICATIONTIMEOUT is used for removing system notifications
@@ -18,7 +20,13 @@ const NOTIFICATIONTIMEOUT = 7 * time.Second
 var db = &gorm.DB{}
 
 func main() {
-	err := godotenv.Load()
+	f, err := os.Create("bot.log")
+	Check(err)
+
+	log.SetFormatter(&log.TextFormatter{})
+	log.SetOutput(f)
+
+	err = godotenv.Load()
 	Check(err)
 
 	token := os.Getenv("TELEGRAM_TOKEN")
