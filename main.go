@@ -77,6 +77,12 @@ func main() {
 		_, err := b.Send(m.Sender, "In development 💪")
 		Check(err)
 	})
+
+	b.Handle("/stats", func(m *tb.Message) {
+		_, err := b.Send(m.Sender, "In development 💪")
+		Check(err)
+	})
+
 	b.Handle("/export", func(m *tb.Message) {
 		handleExport(m, b)
 	})

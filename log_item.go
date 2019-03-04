@@ -60,10 +60,15 @@ func (logItem *LogItem) String() string {
 }
 
 func (logItem *LogItem) toCSV() []string {
+	category := Category{}
+	category.fetchByID(logItem.CategoryID) // nolint: gosec
+	// TODO: think about this extra query
+
 	return []string{
 		strconv.FormatInt(int64(logItem.CreatedAt), 10),
 		logItem.Name,
 		fmt.Sprintf("%f", logItem.Amount),
+		category.Name,
 	}
 }
 
