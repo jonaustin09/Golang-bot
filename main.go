@@ -1,9 +1,6 @@
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"net/http"
 	"os"
 	"time"
 
@@ -16,23 +13,9 @@ import (
 )
 
 // NOTIFICATIONTIMEOUT is used for removing system notifications
-const NOTIFICATIONTIMEOUT = 4 * time.Second
+const NOTIFICATIONTIMEOUT = 7 * time.Second
 
 var db = &gorm.DB{}
-
-func forwardToOldBot(s string) {
-	url := os.Getenv("OLD_BOT_URL")
-
-	var jsonStr = []byte(fmt.Sprintf(`{"message": {"text": "%s"}}`, s))
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	Check(err)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	Check(err)
-	defer resp.Body.Close()
-}
 
 func main() {
 	err := godotenv.Load()
@@ -58,9 +41,6 @@ func main() {
 	})
 
 	b.Handle(tb.OnText, func(m *tb.Message) {
-		if m.Sender.ID == 154701187 {
-			forwardToOldBot(m.Text)
-		}
 		handleNewMessage(m, b)
 	})
 

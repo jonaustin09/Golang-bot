@@ -1,5 +1,9 @@
 package main
 
+import (
+	"github.com/sirupsen/logrus"
+)
+
 // Category stores users' category
 type Category struct {
 	ID             uint64
@@ -13,6 +17,7 @@ func (c *Category) fetchOrCreate(name string, telegramUserID uint64) error {
 		c.Name = name
 		c.TelegramUserID = telegramUserID
 		c.CreatedAt = Timestamp()
+		logrus.Info("Create new category", c)
 		return db.Create(c).Error
 	}
 	return nil

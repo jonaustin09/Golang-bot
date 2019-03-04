@@ -2,6 +2,8 @@ package main
 
 import (
 	"strconv"
+
+	"github.com/sirupsen/logrus"
 )
 
 // User stores telegram user's data in db
@@ -33,6 +35,7 @@ func (user *User) fetchOrCreate(uid uint64, firstName string,
 		user.Username = username
 		user.CreatedAt = Timestamp()
 		db.Create(&user)
+		logrus.Info("Create record user", user)
 		return true
 	}
 

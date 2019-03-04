@@ -7,6 +7,7 @@ import (
 	"time"
 
 	uuid "github.com/satori/go.uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // LogItem stores information about each log item
@@ -40,6 +41,7 @@ func (logItem *LogItem) createRecord(parsedData ParsedData, messageID uint64, se
 
 	}
 
+	logrus.Info("Create record logItem", logItem)
 	err = db.Create(&logItem).Error
 	return err
 }
@@ -87,6 +89,7 @@ func (logItem *LogItem) updateRecord(parsedData ParsedData) error {
 	if err := db.Save(&logItem).Error; err != nil {
 		return err
 	}
+	logrus.Info("Update record logItem", logItem)
 
 	return nil
 }
