@@ -35,49 +35,54 @@ func handleStart(m *tb.Message, b *tb.Bot) {
 func handleNewMessage(m *tb.Message, b *tb.Bot) {
 	parsedData := GetParsedData(m.Text)
 	var text string
-	if !parsedData.IsValid() {
+
+	if !parsedDataIsValid(parsedData) {
 		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+		err := sendServiceMessage(m.Sender, b, text)
+		Check(err)
 
 	} else {
-		logItem := LogItem{}
-		err := logItem.createRecord(parsedData, uint64(m.ID), uint64(m.Sender.ID))
-		if err != nil {
-			logrus.Panic(err)
+		for _, item := range parsedData {
+			logItem := LogItem{}
+			err := logItem.createRecord(item, uint64(m.ID), uint64(m.Sender.ID))
+
+			if err != nil {
+				logrus.Panic(err)
+			}
+
+			text = fmt.Sprintf("`Saved: %s`", logItem.String())
+			err = sendServiceMessage(m.Sender, b, text)
+			Check(err)
 		}
 
-		text = fmt.Sprintf("`Saved: %s`", logItem.String())
-
 	}
-	err := sendServiceMessage(m.Sender, b, text)
-	Check(err)
+
 }
 
 func handleEdit(m *tb.Message, b *tb.Bot) {
 	parsedData := GetParsedData(m.Text)
 	var text string
 	var err error
-	if !parsedData.IsValid() {
+	if !parsedDataIsValid(parsedData) {
 		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+		err = sendServiceMessage(m.Sender, b, text)
+		Check(err)
 
 	} else {
-		logItem := LogItem{}
+		for _, item := range parsedData {
+			logItem := LogItem{}
 
-		err = logItem.getByMessageID(uint64(m.ID))
-		Check(err)
+			err = logItem.getByMessageID(uint64(m.ID))
+			Check(err)
 
-		err = logItem.updateRecord(parsedData)
-		Check(err)
+			err = logItem.updateRecord(item)
+			Check(err)
 
-		text = fmt.Sprintf("`Updated: %s`", logItem.String())
-
+			text = fmt.Sprintf("`Updated: %s`", logItem.String())
+			err = sendServiceMessage(m.Sender, b, text)
+			Check(err)
+		}
 	}
-
-	serviceMessage, err := b.Send(m.Sender, text, tb.ModeMarkdown)
-	if err != nil {
-		logrus.Panic(err)
-	}
-
-	go deleteSystemMessage(serviceMessage, b)
 
 }
 
