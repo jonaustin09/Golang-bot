@@ -58,7 +58,7 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 }
 
 func handleEdit(m *tb.Message, b *tb.Bot) {
-	logrus.Info("Start handleEdit request with", m)
+	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
@@ -89,11 +89,11 @@ func handleEdit(m *tb.Message, b *tb.Bot) {
 }
 
 func handleExport(m *tb.Message, b *tb.Bot) {
-	logrus.Info("Start handleExport request with", m)
+	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
 	Check(err)
-	logrus.Info("Fetch items", items)
+	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
@@ -122,5 +122,5 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 
 	message, err := b.Send(m.Sender, document)
 	Check(err)
-	logrus.Info("Send file", message)
+	logrus.Info("Send file to ", message.Sender.ID)
 }
