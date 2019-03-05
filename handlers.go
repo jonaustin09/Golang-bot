@@ -118,7 +118,7 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 	writer.Flush()
 	logrus.Info("Save file")
 
-	document := tb.Document{File: tb.FromDisk(fileName)}
+	document := &tb.Document{File: tb.FromDisk(fileName)}
 
 	_, err = b.Send(m.Sender, document)
 	check(err)

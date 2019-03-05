@@ -19,13 +19,13 @@ const NOTIFICATIONTIMEOUT = 10 * time.Second
 var db = &gorm.DB{}
 
 func main() {
-	//f, err := os.Create("bot.log")
-	//Check(err)
+	f, err := os.Create("bot.log")
+	check(err)
 
 	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(os.Stdout)
+	log.SetOutput(f)
 
-	err := godotenv.Load()
+	err = godotenv.Load()
 	check(err)
 
 	token := os.Getenv("TELEGRAM_TOKEN")
@@ -37,7 +37,10 @@ func main() {
 	check(err)
 
 	db, err = gorm.Open("sqlite3", "db.sqlite3")
-	db.SetLogger(log.StandardLogger())
+	logger := log.StandardLogger()
+	logger.Out = f
+
+	db.SetLogger(logger)
 	db.LogMode(true)
 	check(err)
 	defer db.Close()
