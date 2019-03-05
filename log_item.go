@@ -18,32 +18,7 @@ type LogItem struct {
 	Amount         float64
 	MessageID      uint64
 	TelegramUserID uint64
-	CategoryID     uint64
-}
-
-func (logItem *LogItem) createRecord(parsedData ParsedData, messageID uint64, senderID uint64) error {
-	uid, err := uuid.NewV4()
-	Check(err)
-
-	logItem.ID = uid.String()
-	logItem.Name = parsedData.Name
-	logItem.Amount = parsedData.Amount
-	logItem.MessageID = messageID
-	logItem.CreatedAt = Timestamp()
-	logItem.TelegramUserID = senderID
-
-	if parsedData.HasCategory() {
-		category := Category{}
-		err = category.fetchOrCreate(parsedData.Category, senderID)
-		if err == nil {
-			logItem.CategoryID = category.ID
-		}
-
-	}
-
-	logrus.Info("Create record logItem ", logItem)
-	err = db.Create(&logItem).Error
-	return err
+	CategoryID     uint64 `gorm:"DEFAULT:9999"`
 }
 
 func (logItem *LogItem) String() string {
@@ -54,9 +29,12 @@ func (logItem *LogItem) String() string {
 
 	category := Category{}
 	err := category.fetchByID(logItem.CategoryID)
-	if err == nil {
-		inCategotyString = fmt.Sprintf("in %s", category.Name)
+	if err != nil {
+		err = category.getDefault()
+		check(err)
 	}
+
+	inCategotyString = fmt.Sprintf("in %s", category.Name)
 
 	return fmt.Sprintf("%s %s %v %s", timeString, logItem.Name, logItem.Amount, inCategotyString)
 }
@@ -74,17 +52,63 @@ func (logItem *LogItem) toCSV() []string {
 	}
 }
 
-func (logItem *LogItem) getByMessageID(messageID uint64) error {
-	return db.Where("message_id = ?", messageID).First(logItem).Error
+func (logItem *LogItem) createRecord(parsedData ParsedData, MessageID uint64, senderID uint64) error {
+	uid, err := uuid.NewV4()
+	check(err)
+
+	logItem.ID = uid.String()
+	logItem.Name = parsedData.Name
+	logItem.Amount = parsedData.Amount
+	logItem.MessageID = MessageID
+	logItem.CreatedAt = timestamp()
+	logItem.TelegramUserID = senderID
+
+	if parsedData.hasCategory() {
+		category := Category{}
+		err = category.fetchOrCreate(parsedData.Category, senderID)
+		if err == nil {
+			logItem.CategoryID = category.ID
+		}
+	} else {
+		category := Category{}
+		err = category.fetchMostRelevantForItem(logItem.Name, logItem.TelegramUserID)
+		if err == nil {
+			logItem.CategoryID = category.ID
+		}
+	}
+
+	logrus.Info("Create record logItem ", logItem)
+	err = db.Create(&logItem).Error
+	return err
 }
 
-func (logItem *LogItem) updateRecord(parsedData ParsedData) error {
+func (logItem *LogItem) getByMessageID(MessageID uint64) error {
+	return db.Where("message_id = ?", MessageID).First(&logItem).Error
+}
+
+func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) error {
 	if logItem.ID == "" {
 		return errors.New("can update only created items")
 	}
 
 	logItem.Name = parsedData.Name
 	logItem.Amount = parsedData.Amount
+
+	if parsedData.hasCategory() {
+		category := Category{}
+		err := category.fetchOrCreate(parsedData.Category, senderID)
+		if err == nil {
+			logItem.CategoryID = category.ID
+		}
+	} else {
+		if logItem.CategoryID == 0 {
+			category := Category{}
+			err := category.fetchMostRelevantForItem(logItem.Name, logItem.TelegramUserID)
+			if err == nil {
+				logItem.CategoryID = category.ID
+			}
+		}
+	}
 
 	if err := db.Save(&logItem).Error; err != nil {
 		return err

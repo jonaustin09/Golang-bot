@@ -27,17 +27,17 @@ type ParsedData struct {
 }
 
 // IsValid validate parsed data
-func (p *ParsedData) IsValid() bool {
+func (p *ParsedData) isValid() bool {
 	return p.Name != "" && p.Amount != 0
 }
 
 // HasCategory get info if category is set
-func (p *ParsedData) HasCategory() bool {
+func (p *ParsedData) hasCategory() bool {
 	return p.Category != ""
 }
 
 // GetParsedData parse data from user input
-func GetParsedData(s string) []ParsedData {
+func getParsedData(s string) []ParsedData {
 	var parsedData []ParsedData
 
 	for _, item := range strings.Split(s, "\n") {
@@ -49,12 +49,12 @@ func GetParsedData(s string) []ParsedData {
 
 		amountStr := strings.Replace(match[amountIndex], ",", ".", 1)
 		amount, err := strconv.ParseFloat(amountStr, 64)
-		Check(err)
+		check(err)
 
 		data.Name = strings.TrimSpace(match[nameIndex])
 		data.Category = strings.TrimSpace(match[categoryIndex])
 		data.Amount = amount
-		if data.IsValid() {
+		if data.isValid() {
 			parsedData = append(parsedData, data)
 		} else {
 			return []ParsedData{}

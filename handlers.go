@@ -11,7 +11,7 @@ import (
 )
 
 func handleStart(m *tb.Message, b *tb.Bot) {
-	logrus.Info("Start handleStart request with", m)
+	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
 	var text string
 
 	uid := uint64(m.Sender.ID)
@@ -27,30 +27,30 @@ func handleStart(m *tb.Message, b *tb.Bot) {
 	}
 
 	err := sendServiceMessage(m.Sender, b, text)
-	Check(err)
+	check(err)
 
 }
 
 func handleNewMessage(m *tb.Message, b *tb.Bot) {
-	logrus.Info("Start handleNewMessage request with", m)
-	parsedData := GetParsedData(m.Text)
+	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
+	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 	var text string
 
 	if !parsedDataIsValid(parsedData) {
 		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
 		err := sendServiceMessage(m.Sender, b, text)
-		Check(err)
+		check(err)
 
 	} else {
 		for _, item := range parsedData {
 			logItem := LogItem{}
 			err := logItem.createRecord(item, uint64(m.ID), uint64(m.Sender.ID))
-			Check(err)
+			check(err)
 
 			text = fmt.Sprintf("`Saved: %s`", logItem.String())
 			err = sendServiceMessage(m.Sender, b, text)
-			Check(err)
+			check(err)
 		}
 
 	}
@@ -59,7 +59,7 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 
 func handleEdit(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
-	parsedData := GetParsedData(m.Text)
+	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
 	var text string
@@ -68,21 +68,21 @@ func handleEdit(m *tb.Message, b *tb.Bot) {
 	if !parsedDataIsValid(parsedData) {
 		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
 		err = sendServiceMessage(m.Sender, b, text)
-		Check(err)
+		check(err)
 
 	} else {
 		for _, item := range parsedData {
 			logItem := LogItem{}
 
 			err = logItem.getByMessageID(uint64(m.ID))
-			Check(err)
+			check(err)
 
-			err = logItem.updateRecord(item)
-			Check(err)
+			err = logItem.updateRecord(item, uint64(m.Sender.ID))
+			check(err)
 
 			text = fmt.Sprintf("`Updated: %s`", logItem.String())
 			err = sendServiceMessage(m.Sender, b, text)
-			Check(err)
+			check(err)
 		}
 	}
 
@@ -92,18 +92,18 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	Check(err)
+	check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		Check(err)
+		check(err)
 		return
 	}
 
-	fileName := fmt.Sprintf("%v-%v-export.csv", m.Sender.ID, Timestamp())
+	fileName := fmt.Sprintf("%v-%v-export.csv", m.Sender.ID, timestamp())
 	file, err := os.Create(fileName)
-	Check(err)
+	check(err)
 	logrus.Info("Create file")
 
 	defer os.Remove(fileName)
@@ -113,14 +113,14 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 
 	for _, item := range items {
 		err = writer.Write(item.toCSV())
-		Check(err)
+		check(err)
 	}
 	writer.Flush()
 	logrus.Info("Save file")
 
-	document := &tb.Document{File: tb.FromDisk(fileName)}
+	document := tb.Document{File: tb.FromDisk(fileName)}
 
-	message, err := b.Send(m.Sender, document)
-	Check(err)
-	logrus.Info("Send file to ", message.Sender.ID)
+	_, err = b.Send(m.Sender, document)
+	check(err)
+	logrus.Info("Send file to ", m.Sender.ID)
 }

@@ -10,24 +10,23 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
-
 	log "github.com/sirupsen/logrus"
 )
 
 // NOTIFICATIONTIMEOUT is used for removing system notifications
-const NOTIFICATIONTIMEOUT = 7 * time.Second
+const NOTIFICATIONTIMEOUT = 10 * time.Second
 
 var db = &gorm.DB{}
 
 func main() {
-	f, err := os.Create("bot.log")
-	Check(err)
+	//f, err := os.Create("bot.log")
+	//Check(err)
 
 	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(f)
+	log.SetOutput(os.Stdout)
 
-	err = godotenv.Load()
-	Check(err)
+	err := godotenv.Load()
+	check(err)
 
 	token := os.Getenv("TELEGRAM_TOKEN")
 
@@ -35,10 +34,12 @@ func main() {
 		Token:  token,
 		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
 	})
-	Check(err)
+	check(err)
 
 	db, err = gorm.Open("sqlite3", "db.sqlite3")
-	Check(err)
+	db.SetLogger(log.StandardLogger())
+	db.LogMode(true)
+	check(err)
 	defer db.Close()
 
 	// Migrate the schema
@@ -58,17 +59,17 @@ func main() {
 
 	b.Handle(tb.OnPhoto, func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "Sorry i don't support images 😓")
-		Check(err)
+		check(err)
 	})
 
 	b.Handle("/income", func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "In development 💪")
-		Check(err)
+		check(err)
 	})
 
 	b.Handle("/stats", func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "In development 💪")
-		Check(err)
+		check(err)
 	})
 
 	b.Handle("/export", func(m *tb.Message) {
