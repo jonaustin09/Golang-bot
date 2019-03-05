@@ -16,7 +16,7 @@ const (
 	categoryIndex = 5
 )
 
-var regex = `(?P<name>[А-ЯҐЄІЇa-яґєшії\s+]+)(?P<amount>\d+((\.|,)\d*)?)\s*(?P<category>[А-ЯҐЄІЇa-яґєшії\s+]{0,})`
+var regex = `(?P<name>[А-ЯҐЄІЇa-яґєшії\s\d]+)\s+(?P<amount>\d+((\.|,)\d*)?)(?P<category>\s+[А-ЯҐЄІЇa-яґєшії\s\d]{0,}|$)`
 var myExp = myRegexp{regexp.MustCompile(regex)}
 
 // ParsedData contains info about message data
@@ -44,30 +44,27 @@ func GetParsedData(s string) []ParsedData {
 		var data ParsedData
 		match := myExp.FindStringSubmatch(item)
 		if match == nil {
-			return parsedData
+			return []ParsedData{}
 		}
 
 		amountStr := strings.Replace(match[amountIndex], ",", ".", 1)
 		amount, err := strconv.ParseFloat(amountStr, 64)
 		Check(err)
 
-		data.Name = match[nameIndex]
-		data.Category = match[categoryIndex]
+		data.Name = strings.TrimSpace(match[nameIndex])
+		data.Category = strings.TrimSpace(match[categoryIndex])
 		data.Amount = amount
-		parsedData = append(parsedData, data)
+		if data.IsValid() {
+			parsedData = append(parsedData, data)
+		} else {
+			return []ParsedData{}
+		}
+
 	}
 
 	return parsedData
 }
 
 func parsedDataIsValid(parsedData []ParsedData) bool {
-	isValid := false
-	for i := range parsedData {
-		isValid = parsedData[i].IsValid()
-		if !isValid {
-			return false
-		}
-		isValid = true
-	}
-	return isValid
+	return len(parsedData) > 0
 }
