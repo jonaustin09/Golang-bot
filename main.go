@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"os"
 	"time"
 
@@ -19,11 +20,20 @@ const NOTIFICATIONTIMEOUT = 10 * time.Second
 var db = &gorm.DB{}
 
 func main() {
-	f, err := os.Create("bot.log")
-	check(err)
+	logIntoFile := true
+	logSQL := true
+	var err error
+	var loggerFile io.Writer
+
+	if logIntoFile {
+		loggerFile, err = os.Create("bot.log")
+		check(err)
+	} else {
+		loggerFile = os.Stdout
+	}
 
 	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(f)
+	log.SetOutput(loggerFile)
 
 	err = godotenv.Load()
 	check(err)
@@ -37,13 +47,15 @@ func main() {
 	check(err)
 
 	db, err = gorm.Open("sqlite3", "db.sqlite3")
-	logger := log.StandardLogger()
-	logger.Out = f
-
-	db.SetLogger(logger)
-	db.LogMode(true)
 	check(err)
 	defer db.Close()
+
+	if logSQL {
+		logger := log.StandardLogger()
+		logger.Out = loggerFile
+		db.SetLogger(logger)
+		db.LogMode(true)
+	}
 
 	// Migrate the schema
 	db.AutoMigrate(&User{}, &LogItem{}, &Category{})
@@ -77,6 +89,9 @@ func main() {
 
 	b.Handle("/export", func(m *tb.Message) {
 		handleExport(m, b)
+	})
+	b.Handle("/delete", func(m *tb.Message) {
+		handleDelete(m, b)
 	})
 
 	b.Start()

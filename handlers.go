@@ -35,57 +35,63 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
 	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
-	var text string
 
-	if !parsedDataIsValid(parsedData) {
-		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
-		err := sendServiceMessage(m.Sender, b, text)
-		check(err)
-
-	} else {
-		for _, item := range parsedData {
-			logItem := LogItem{}
-			err := logItem.createRecord(item, uint64(m.ID), uint64(m.Sender.ID))
+	if m.ReplyTo != nil {
+		if !recordExists(uint64(m.ReplyTo.ID)) {
+			text := "You can not edit this message"
+			err := sendServiceMessage(m.Sender, b, text)
 			check(err)
-
-			text = fmt.Sprintf("`Saved: %s`", logItem.String())
-			err = sendServiceMessage(m.Sender, b, text)
-			check(err)
+		} else {
+			editLogs(uint64(m.ReplyTo.ID), m.Sender, b, parsedData)
 		}
 
+	} else {
+		var text string
+
+		if !parsedDataIsValid(parsedData) {
+			text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+			err := sendServiceMessage(m.Sender, b, text)
+			check(err)
+
+		} else {
+			for _, item := range parsedData {
+				logItem := LogItem{}
+				err := logItem.createRecord(item, uint64(m.ID), uint64(m.Sender.ID))
+				check(err)
+
+				text = fmt.Sprintf("`Saved: %s`", logItem.String())
+				err = sendServiceMessage(m.Sender, b, text)
+				check(err)
+			}
+
+		}
 	}
 
 }
 
 func handleEdit(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
+
 	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	var text string
-	var err error
+	editLogs(uint64(m.ID), m.Sender, b, parsedData)
+}
 
-	if !parsedDataIsValid(parsedData) {
-		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
-		err = sendServiceMessage(m.Sender, b, text)
+func handleDelete(m *tb.Message, b *tb.Bot) {
+	logrus.Infof("Start handleDelete request with %s by %v", m.Text, m.Sender.ID)
+	if m.ReplyTo == nil {
+		text := "You should reply for a message which you want to delete ↩️"
+		err := sendServiceMessage(m.Sender, b, text)
+		check(err)
+	} else {
+		err := deleteRecordsByMessageID(uint64(m.ReplyTo.ID))
 		check(err)
 
-	} else {
-		for _, item := range parsedData {
-			logItem := LogItem{}
-
-			err = logItem.getByMessageID(uint64(m.ID))
-			check(err)
-
-			err = logItem.updateRecord(item, uint64(m.Sender.ID))
-			check(err)
-
-			text = fmt.Sprintf("`Updated: %s`", logItem.String())
-			err = sendServiceMessage(m.Sender, b, text)
-			check(err)
-		}
+		text := "Remove item"
+		err = sendServiceMessage(m.Sender, b, text)
+		check(err)
 	}
-
 }
 
 func handleExport(m *tb.Message, b *tb.Bot) {
@@ -123,4 +129,35 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 	_, err = b.Send(m.Sender, document)
 	check(err)
 	logrus.Info("Send file to ", m.Sender.ID)
+}
+
+func editLogs(messageID uint64, sender *tb.User, b *tb.Bot, parsedData []ParsedData) {
+	logrus.Info("Start editing")
+	var text string
+	var err error
+
+	if !parsedDataIsValid(parsedData) {
+		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+		err = sendServiceMessage(sender, b, text)
+		check(err)
+
+	} else {
+		text := "`Remove related items`"
+		err = sendServiceMessage(sender, b, text)
+		check(err)
+
+		err := deleteRecordsByMessageID(messageID)
+		check(err)
+		logrus.Info("Remove all related records")
+
+		for _, item := range parsedData {
+			logItem := LogItem{}
+			err = logItem.createRecord(item, uint64(messageID), uint64(sender.ID))
+			check(err)
+
+			text = fmt.Sprintf("`Create: %s`", logItem.String())
+			err = sendServiceMessage(sender, b, text)
+			check(err)
+		}
+	}
 }

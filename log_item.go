@@ -82,10 +82,6 @@ func (logItem *LogItem) createRecord(parsedData ParsedData, MessageID uint64, se
 	return err
 }
 
-func (logItem *LogItem) getByMessageID(MessageID uint64) error {
-	return db.Where("message_id = ?", MessageID).First(&logItem).Error
-}
-
 func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) error {
 	if logItem.ID == "" {
 		return errors.New("can update only created items")
@@ -124,4 +120,12 @@ func getRecordsByTelegramID(SenderID uint64) ([]LogItem, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+func deleteRecordsByMessageID(MessageID uint64) error {
+	return db.Where("message_id = ?", MessageID).Delete(LogItem{}).Error
+}
+
+func recordExists(MessageID uint64) bool {
+	return !db.Where("message_id = ?", MessageID).First(&LogItem{}).RecordNotFound()
 }
