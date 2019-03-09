@@ -87,8 +87,9 @@ func handleDelete(m *tb.Message, b *tb.Bot) {
 	} else {
 		err := deleteRecordsByMessageID(uint64(m.ReplyTo.ID))
 		check(err)
+		logrus.Info("Remove all related records")
 
-		text := "Remove item"
+		text := "`Remove item`"
 		err = sendServiceMessage(m.Sender, b, text)
 		check(err)
 	}
