@@ -29,7 +29,7 @@ def get_all_time_by_month_stat(data):
                     labelbottom=True, left=False, right=False, labelleft=True)
 
     # Draw horizontal axis lines
-    for val in plt.get_yticks():
+    for val in filter(lambda x: x >= 0, plt.get_yticks()):
         plt.axhline(y=val, linestyle='dashed', alpha=0.3, color='#eeeeee',
                     zorder=1)
 
