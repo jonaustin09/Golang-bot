@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package stats;
+
+service Stats {
+    rpc GetAllTimeByMonthStat (LogItemQueryMessage) returns (ImageMessage) {
+    }
+    rpc GetAllTimeCategoryStat (LogItemQueryMessage) returns (ImageMessage) {
+    }
+}
+
+message ImageMessage {
+    bytes res = 1;
+}
+
+message LogItemMessage {
+    int64 CreatedAt = 1;
+    string Name = 2;
+    float Amount = 3;
+    string Category = 4;
+}
+
+message LogItemQueryMessage {
+    repeated LogItemMessage LogItems = 1;
+}

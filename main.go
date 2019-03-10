@@ -5,6 +5,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/dobrovolsky/money_bot/stats"
+	"google.golang.org/grpc"
+
 	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
 
@@ -20,6 +23,7 @@ const NOTIFICATIONTIMEOUT = 10 * time.Second
 var db = &gorm.DB{}
 
 func main() {
+	// TODO: add setting file
 	logIntoFile := true
 	logSQL := true
 	var err error
@@ -60,6 +64,12 @@ func main() {
 	// Migrate the schema
 	db.AutoMigrate(&User{}, &LogItem{}, &Category{})
 
+	grpServerAddress := os.Getenv("GRPC_SERVER_ADDRESS")
+	conn, err := grpc.Dial(grpServerAddress, grpc.WithInsecure())
+	check(err)
+	defer conn.Close()
+	statsClient := stats.NewStatsClient(conn)
+
 	b.Handle("/start", func(m *tb.Message) {
 		handleStart(m, b)
 	})
@@ -82,9 +92,13 @@ func main() {
 		check(err)
 	})
 
-	b.Handle("/stats", func(m *tb.Message) {
-		_, err := b.Send(m.Sender, "In development 💪")
-		check(err)
+	b.Handle("/stat_all_by_month", func(m *tb.Message) {
+		handleStatsAllByMonth(m, b, statsClient)
+
+	})
+
+	b.Handle("/stat_all_by_category", func(m *tb.Message) {
+		handleStatsAllByCategory(m, b, statsClient)
 	})
 
 	b.Handle("/export", func(m *tb.Message) {

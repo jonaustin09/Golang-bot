@@ -1,18 +1,20 @@
 version: '3.7'
 
 services:
-  build:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    command: bash -c "cd /go/src/money/ && rm build && go build -o build"
-    volumes:
-    - .:/go/src/money
-
   bot:
     build:
       context: .
       dockerfile: Dockerfile
-    command:  bash -c "cd /go/src/money/ && rm build && go build -o build && ./build"
+    command:  bash -c "cd /go/src/github.com/dobrovolsky/money_bot/ && rm --f build && go build -o build && ./build"
     volumes:
-    - .:/go/src/money
+    - .:/go/src/github.com/dobrovolsky/money_bot/
+    depends_on:
+      - stats
+
+  stats:
+    build:
+      context: stats
+      dockerfile: Dockerfile
+    command: bash -c "cd /code/stats/ && poetry run python server.py"
+    volumes:
+    - .:/code

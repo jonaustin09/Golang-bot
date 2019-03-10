@@ -21,6 +21,12 @@ type LogItem struct {
 	CategoryID     uint64 `gorm:"DEFAULT:9999"`
 }
 
+func (logItem *LogItem) categoryName() string {
+	category := Category{}
+	category.fetchByID(logItem.CategoryID) // nolint: gosec
+	return category.Name
+}
+
 func (logItem *LogItem) String() string {
 	unixTime := time.Unix(int64(logItem.CreatedAt), 0)
 	timeString := unixTime.Format("02-01-2006")
@@ -40,15 +46,13 @@ func (logItem *LogItem) String() string {
 }
 
 func (logItem *LogItem) toCSV() []string {
-	category := Category{}
-	category.fetchByID(logItem.CategoryID) // nolint: gosec
 	// TODO: think about this extra query
 
 	return []string{
 		strconv.FormatInt(int64(logItem.CreatedAt), 10),
 		logItem.Name,
 		fmt.Sprintf("%f", logItem.Amount),
-		category.Name,
+		logItem.categoryName(),
 	}
 }
 

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"os"
 
+	"github.com/dobrovolsky/money_bot/stats"
 	"github.com/sirupsen/logrus"
 
 	tb "gopkg.in/tucnak/telebot.v2"
@@ -93,6 +95,92 @@ func handleDelete(m *tb.Message, b *tb.Bot) {
 		err = sendServiceMessage(m.Sender, b, text)
 		check(err)
 	}
+}
+
+func handleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
+	var err error
+	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
+	check(err)
+	logrus.Infof("Fetch items count %v", len(items))
+
+	if len(items) == 0 {
+		_, err = b.Send(m.Sender, "There are not any records yet 😒")
+		check(err)
+		return
+	}
+
+	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
+	for _, item := range items {
+		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
+			CreatedAt: int64(item.CreatedAt),
+			Name:      item.Name,
+			Amount:    float32(item.Amount),
+			Category:  item.categoryName(),
+		})
+	}
+
+	response, err := c.GetAllTimeByMonthStat(context.Background(), &stats.LogItemQueryMessage{
+		LogItems: itemsForAnalyze,
+	})
+	check(err)
+
+	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
+	file, err := os.Create(fileName)
+	check(err)
+
+	defer os.Remove(fileName)
+	defer file.Close()
+
+	file.Write(response.Res)
+
+	document := &tb.Photo{File: tb.FromDisk(fileName)}
+
+	_, err = b.Send(m.Sender, document)
+	check(err)
+}
+
+func handleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
+	var err error
+	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
+	check(err)
+	logrus.Infof("Fetch items count %v", len(items))
+
+	if len(items) == 0 {
+		_, err = b.Send(m.Sender, "There are not any records yet 😒")
+		check(err)
+		return
+	}
+
+	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
+	for _, item := range items {
+		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
+			CreatedAt: int64(item.CreatedAt),
+			Name:      item.Name,
+			Amount:    float32(item.Amount),
+			Category:  item.categoryName(),
+		})
+	}
+
+	response, err := c.GetAllTimeCategoryStat(context.Background(), &stats.LogItemQueryMessage{
+		LogItems: itemsForAnalyze,
+	})
+	check(err)
+
+	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
+	file, err := os.Create(fileName)
+	check(err)
+
+	defer os.Remove(fileName)
+	defer file.Close()
+
+	file.Write(response.Res)
+
+	document := &tb.Photo{File: tb.FromDisk(fileName)}
+
+	_, err = b.Send(m.Sender, document)
+	check(err)
 }
 
 func handleExport(m *tb.Message, b *tb.Bot) {
