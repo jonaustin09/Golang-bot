@@ -18,13 +18,8 @@ type LogItem struct {
 	Amount         float64
 	MessageID      uint64
 	TelegramUserID uint64
-	CategoryID     uint64 `gorm:"DEFAULT:9999"`
-}
-
-func (logItem *LogItem) categoryName() string {
-	category := Category{}
-	category.fetchByID(logItem.CategoryID) // nolint: gosec
-	return category.Name
+	CategoryID     uint64   `gorm:"DEFAULT:9999"`
+	Category       Category `gorm:"auto_preload"`
 }
 
 func (logItem *LogItem) String() string {
@@ -52,7 +47,7 @@ func (logItem *LogItem) toCSV() []string {
 		strconv.FormatInt(int64(logItem.CreatedAt), 10),
 		logItem.Name,
 		fmt.Sprintf("%f", logItem.Amount),
-		logItem.categoryName(),
+		logItem.Category.Name,
 	}
 }
 

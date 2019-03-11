@@ -100,6 +100,10 @@ func HandleDelete(m *tb.Message, b *tb.Bot) {
 func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	var err error
+
+	Db.InstantSet("gorm:auto_preload", true)
+	defer Db.InstantSet("gorm:auto_preload", false)
+
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
@@ -116,7 +120,6 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 			CreatedAt: int64(item.CreatedAt),
 			Name:      item.Name,
 			Amount:    float32(item.Amount),
-			Category:  item.categoryName(),
 		})
 	}
 
@@ -143,6 +146,10 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 func HandleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	var err error
+
+	Db.InstantSet("gorm:auto_preload", true)
+	defer Db.InstantSet("gorm:auto_preload", false)
+
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
@@ -159,7 +166,7 @@ func HandleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 			CreatedAt: int64(item.CreatedAt),
 			Name:      item.Name,
 			Amount:    float32(item.Amount),
-			Category:  item.categoryName(),
+			Category:  item.Category.Name,
 		})
 	}
 
@@ -186,6 +193,10 @@ func HandleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 func HandleExport(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 	var err error
+
+	Db.InstantSet("gorm:auto_preload", true)
+	defer Db.InstantSet("gorm:auto_preload", false)
+
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
