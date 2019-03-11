@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 import (
 	"github.com/sirupsen/logrus"
@@ -13,26 +13,26 @@ type Category struct {
 }
 
 func (c *Category) fetchOrCreate(name string, telegramUserID uint64) error {
-	if db.Where("name = ? AND telegram_user_id = ?", name, telegramUserID).First(c).RecordNotFound() {
+	if Db.Where("name = ? AND telegram_user_id = ?", name, telegramUserID).First(c).RecordNotFound() {
 		c.Name = name
 		c.TelegramUserID = telegramUserID
 		c.createdAt = timestamp()
 		logrus.Info("Create new category", c)
-		return db.Create(&c).Error
+		return Db.Create(&c).Error
 	}
 	return nil
 }
 
 func (c *Category) fetchByID(ID uint64) error {
-	return db.First(c, ID).Error
+	return Db.First(c, ID).Error
 }
 
 func (c *Category) getDefault() error {
-	return db.First(c, 9999).Error
+	return Db.First(c, 9999).Error
 }
 
 func (c *Category) fetchMostRelevantForItem(name string, telegramUserID uint64) error {
-	return db.Raw(
+	return Db.Raw(
 		`SELECT id, name, MAX(c) as _count FROM 
 				(SELECT categories.id, categories.name , COUNT(log_items.category_id) as c FROM categories 
 					JOIN log_items ON log_items.category_id = categories.id

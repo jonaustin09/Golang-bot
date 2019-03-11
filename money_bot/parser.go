@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 import (
 	"regexp"
@@ -49,7 +49,7 @@ func getParsedData(s string) []ParsedData {
 
 		amountStr := strings.Replace(match[amountIndex], ",", ".", 1)
 		amount, err := strconv.ParseFloat(amountStr, 64)
-		check(err)
+		Check(err)
 
 		data.Name = strings.TrimSpace(match[nameIndex])
 		data.Category = strings.TrimSpace(match[categoryIndex])

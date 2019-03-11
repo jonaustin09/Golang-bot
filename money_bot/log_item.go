@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 import (
 	"errors"
@@ -37,7 +37,7 @@ func (logItem *LogItem) String() string {
 	err := category.fetchByID(logItem.CategoryID)
 	if err != nil {
 		err = category.getDefault()
-		check(err)
+		Check(err)
 	}
 
 	inCategotyString = fmt.Sprintf("in %s", category.Name)
@@ -58,7 +58,7 @@ func (logItem *LogItem) toCSV() []string {
 
 func (logItem *LogItem) createRecord(parsedData ParsedData, MessageID uint64, senderID uint64) error {
 	uid, err := uuid.NewV4()
-	check(err)
+	Check(err)
 
 	logItem.ID = uid.String()
 	logItem.Name = parsedData.Name
@@ -82,7 +82,7 @@ func (logItem *LogItem) createRecord(parsedData ParsedData, MessageID uint64, se
 	}
 
 	logrus.Info("Create record logItem ", logItem)
-	err = db.Create(&logItem).Error
+	err = Db.Create(&logItem).Error
 	return err
 }
 
@@ -110,7 +110,7 @@ func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) err
 		}
 	}
 
-	if err := db.Save(&logItem).Error; err != nil {
+	if err := Db.Save(&logItem).Error; err != nil {
 		return err
 	}
 	logrus.Info("Update record logItem ", logItem)
@@ -120,16 +120,16 @@ func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) err
 
 func getRecordsByTelegramID(SenderID uint64) ([]LogItem, error) {
 	var items []LogItem
-	if err := db.Where("telegram_user_id = ?", SenderID).Find(&items).Order("created_at").Error; err != nil {
+	if err := Db.Where("telegram_user_id = ?", SenderID).Find(&items).Order("created_at").Error; err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
 func deleteRecordsByMessageID(MessageID uint64) error {
-	return db.Where("message_id = ?", MessageID).Delete(LogItem{}).Error
+	return Db.Where("message_id = ?", MessageID).Delete(LogItem{}).Error
 }
 
 func recordExists(MessageID uint64) bool {
-	return !db.Where("message_id = ?", MessageID).First(&LogItem{}).RecordNotFound()
+	return !Db.Where("message_id = ?", MessageID).First(&LogItem{}).RecordNotFound()
 }

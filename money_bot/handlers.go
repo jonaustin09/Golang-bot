@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func handleStart(m *tb.Message, b *tb.Bot) {
+func HandleStart(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
 	var text string
 
@@ -29,11 +29,11 @@ func handleStart(m *tb.Message, b *tb.Bot) {
 	}
 
 	err := sendServiceMessage(m.Sender, b, text)
-	check(err)
+	Check(err)
 
 }
 
-func handleNewMessage(m *tb.Message, b *tb.Bot) {
+func HandleNewMessage(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
 	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
@@ -42,7 +42,7 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 		if !recordExists(uint64(m.ReplyTo.ID)) {
 			text := "You can not edit this message"
 			err := sendServiceMessage(m.Sender, b, text)
-			check(err)
+			Check(err)
 		} else {
 			editLogs(uint64(m.ReplyTo.ID), m.Sender, b, parsedData)
 		}
@@ -53,17 +53,17 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 		if !parsedDataIsValid(parsedData) {
 			text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
 			err := sendServiceMessage(m.Sender, b, text)
-			check(err)
+			Check(err)
 
 		} else {
 			for _, item := range parsedData {
 				logItem := LogItem{}
 				err := logItem.createRecord(item, uint64(m.ID), uint64(m.Sender.ID))
-				check(err)
+				Check(err)
 
 				text = fmt.Sprintf("`Saved: %s`", logItem.String())
 				err = sendServiceMessage(m.Sender, b, text)
-				check(err)
+				Check(err)
 			}
 
 		}
@@ -71,7 +71,7 @@ func handleNewMessage(m *tb.Message, b *tb.Bot) {
 
 }
 
-func handleEdit(m *tb.Message, b *tb.Bot) {
+func HandleEdit(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 
 	parsedData := getParsedData(m.Text)
@@ -80,33 +80,33 @@ func handleEdit(m *tb.Message, b *tb.Bot) {
 	editLogs(uint64(m.ID), m.Sender, b, parsedData)
 }
 
-func handleDelete(m *tb.Message, b *tb.Bot) {
+func HandleDelete(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleDelete request with %s by %v", m.Text, m.Sender.ID)
 	if m.ReplyTo == nil {
 		text := "You should reply for a message which you want to delete ↩️"
 		err := sendServiceMessage(m.Sender, b, text)
-		check(err)
+		Check(err)
 	} else {
 		err := deleteRecordsByMessageID(uint64(m.ReplyTo.ID))
-		check(err)
+		Check(err)
 		logrus.Info("Remove all related records")
 
 		text := "`Remove item`"
 		err = sendServiceMessage(m.Sender, b, text)
-		check(err)
+		Check(err)
 	}
 }
 
-func handleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	check(err)
+	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		check(err)
+		Check(err)
 		return
 	}
 
@@ -123,11 +123,11 @@ func handleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	response, err := c.GetAllTimeByMonthStat(context.Background(), &stats.LogItemQueryMessage{
 		LogItems: itemsForAnalyze,
 	})
-	check(err)
+	Check(err)
 
 	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
 	file, err := os.Create(fileName)
-	check(err)
+	Check(err)
 
 	defer os.Remove(fileName)
 	defer file.Close()
@@ -137,19 +137,19 @@ func handleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	document := &tb.Photo{File: tb.FromDisk(fileName)}
 
 	_, err = b.Send(m.Sender, document)
-	check(err)
+	Check(err)
 }
 
-func handleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+func HandleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	check(err)
+	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		check(err)
+		Check(err)
 		return
 	}
 
@@ -166,11 +166,11 @@ func handleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	response, err := c.GetAllTimeCategoryStat(context.Background(), &stats.LogItemQueryMessage{
 		LogItems: itemsForAnalyze,
 	})
-	check(err)
+	Check(err)
 
 	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
 	file, err := os.Create(fileName)
-	check(err)
+	Check(err)
 
 	defer os.Remove(fileName)
 	defer file.Close()
@@ -180,25 +180,25 @@ func handleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	document := &tb.Photo{File: tb.FromDisk(fileName)}
 
 	_, err = b.Send(m.Sender, document)
-	check(err)
+	Check(err)
 }
 
-func handleExport(m *tb.Message, b *tb.Bot) {
+func HandleExport(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	check(err)
+	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		check(err)
+		Check(err)
 		return
 	}
 
 	fileName := fmt.Sprintf("%v-%v-export.csv", m.Sender.ID, timestamp())
 	file, err := os.Create(fileName)
-	check(err)
+	Check(err)
 	logrus.Info("Create file")
 
 	defer os.Remove(fileName)
@@ -208,7 +208,7 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 
 	for _, item := range items {
 		err = writer.Write(item.toCSV())
-		check(err)
+		Check(err)
 	}
 	writer.Flush()
 	logrus.Info("Save file")
@@ -216,7 +216,7 @@ func handleExport(m *tb.Message, b *tb.Bot) {
 	document := &tb.Document{File: tb.FromDisk(fileName)}
 
 	_, err = b.Send(m.Sender, document)
-	check(err)
+	Check(err)
 	logrus.Info("Send file to ", m.Sender.ID)
 }
 
@@ -228,25 +228,25 @@ func editLogs(messageID uint64, sender *tb.User, b *tb.Bot, parsedData []ParsedD
 	if !parsedDataIsValid(parsedData) {
 		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
 		err = sendServiceMessage(sender, b, text)
-		check(err)
+		Check(err)
 
 	} else {
 		text := "`Remove related items`"
 		err = sendServiceMessage(sender, b, text)
-		check(err)
+		Check(err)
 
 		err := deleteRecordsByMessageID(messageID)
-		check(err)
+		Check(err)
 		logrus.Info("Remove all related records")
 
 		for _, item := range parsedData {
 			logItem := LogItem{}
 			err = logItem.createRecord(item, uint64(messageID), uint64(sender.ID))
-			check(err)
+			Check(err)
 
 			text = fmt.Sprintf("`Create: %s`", logItem.String())
 			err = sendServiceMessage(sender, b, text)
-			check(err)
+			Check(err)
 		}
 	}
 }

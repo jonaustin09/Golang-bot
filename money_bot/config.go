@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 import (
 	"os"
@@ -9,23 +9,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-var db = &gorm.DB{}
-var config = &Config{}
+var Db = &gorm.DB{}
+var Confg = &Config{}
 
 type Config struct {
-	dbFile              string
-	logIntoFile         bool
-	logSQL              bool
-	telegramToken       string
+	DbFile              string
+	LogIntoFile         bool
+	LogSQL              bool
+	TelegramToken       string
 	GRPCServer          string
-	notificationTimeout time.Duration
+	NotificationTimeout time.Duration
 }
 
-func initConfig() (*Config, error) {
+func InitConfig() (*Config, error) {
 	v := viper.New()
 
 	err := godotenv.Load()
-	check(err)
+	Check(err)
 
 	v.SetDefault("db_file", "db.sqlite3")
 	v.SetDefault("enable_file_log", true)
@@ -42,11 +42,11 @@ func initConfig() (*Config, error) {
 	}
 
 	config := &Config{}
-	config.notificationTimeout = time.Duration(v.GetInt("notification_timeout")) * time.Second
-	config.logIntoFile = v.GetBool("enable_file_log")
-	config.logSQL = v.GetBool("enable_sql_log")
-	config.dbFile = v.GetString("db_file")
-	config.telegramToken = os.Getenv("TELEGRAM_TOKEN")
+	config.NotificationTimeout = time.Duration(v.GetInt("notification_timeout")) * time.Second
+	config.LogIntoFile = v.GetBool("enable_file_log")
+	config.LogSQL = v.GetBool("enable_sql_log")
+	config.DbFile = v.GetString("db_file")
+	config.TelegramToken = os.Getenv("TELEGRAM_TOKEN")
 	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
 	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
 

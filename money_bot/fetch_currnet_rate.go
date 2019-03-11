@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 //
 //import (

@@ -1,4 +1,4 @@
-package main
+package money_bot
 
 import (
 	"time"
@@ -13,18 +13,18 @@ func timestamp() uint64 {
 	return uint64(time.Now().UnixNano() / int64(time.Second))
 }
 
-// Check check result for errors
-func check(err error) {
+// Check Check result for errors
+func Check(err error) {
 	if err != nil {
 		logrus.Panic(err)
 	}
 }
 
 func deleteSystemMessage(m *tb.Message, b *tb.Bot) {
-	time.Sleep(config.notificationTimeout)
+	time.Sleep(Confg.NotificationTimeout)
 	err := b.Delete(m)
 	logrus.Info("Remove service message ", m.ID)
-	check(err)
+	Check(err)
 }
 
 func sendServiceMessage(to tb.Recipient, b *tb.Bot, text string) error {

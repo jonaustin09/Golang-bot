@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	mb "github.com/dobrovolsky/money_bot/money_bot"
 	"github.com/dobrovolsky/money_bot/stats"
 	"google.golang.org/grpc"
 
@@ -20,78 +21,78 @@ func main() {
 	var err error
 	var loggerFile io.Writer
 
-	config, err = initConfig()
-	check(err)
+	mb.Confg, err = mb.InitConfig()
+	mb.Check(err)
 
-	if config.logIntoFile {
+	if mb.Confg.LogIntoFile {
 		loggerFile, err = os.Create("bot.log")
-		check(err)
+		mb.Check(err)
 	} else {
 		loggerFile = os.Stdout
 	}
 
 	b, err := tb.NewBot(tb.Settings{
-		Token:  config.telegramToken,
+		Token:  mb.Confg.TelegramToken,
 		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
 	})
-	check(err)
+	mb.Check(err)
 
-	db, err = gorm.Open("sqlite3", config.dbFile)
-	check(err)
-	defer db.Close()
+	mb.Db, err = gorm.Open("sqlite3", mb.Confg.DbFile)
+	mb.Check(err)
+	defer mb.Db.Close()
 
-	if config.logSQL {
+	if mb.Confg.LogSQL {
 		logger := log.StandardLogger()
 		logger.Out = loggerFile
-		db.SetLogger(logger)
-		db.LogMode(true)
+		mb.Db.SetLogger(logger)
+		mb.Db.LogMode(true)
 	}
 
 	// Migrate the schema
-	db.AutoMigrate(&User{}, &LogItem{}, &Category{})
+	mb.Db.AutoMigrate(&mb.User{}, &mb.LogItem{}, &mb.Category{})
 
 	grpServerAddress := os.Getenv("GRPC_SERVER_ADDRESS")
 	conn, err := grpc.Dial(grpServerAddress, grpc.WithInsecure())
-	check(err)
+	mb.Check(err)
 	defer conn.Close()
 	statsClient := stats.NewStatsClient(conn)
 
 	b.Handle("/start", func(m *tb.Message) {
-		handleStart(m, b)
+		mb.HandleStart(m, b)
 	})
 
 	b.Handle(tb.OnText, func(m *tb.Message) {
-		handleNewMessage(m, b)
+		mb.HandleNewMessage(m, b)
 	})
 
 	b.Handle(tb.OnEdited, func(m *tb.Message) {
-		handleEdit(m, b)
+		mb.HandleEdit(m, b)
 	})
 
 	b.Handle(tb.OnPhoto, func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "Sorry i don't support images 😓")
-		check(err)
+		mb.Check(err)
 	})
 
 	b.Handle("/income", func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "In development 💪")
-		check(err)
+		mb.Check(err)
 	})
 
 	b.Handle("/stat_all_by_month", func(m *tb.Message) {
-		handleStatsAllByMonth(m, b, statsClient)
+		mb.HandleStatsAllByMonth(m, b, statsClient)
 
 	})
 
 	b.Handle("/stat_all_by_category", func(m *tb.Message) {
-		handleStatsAllByCategory(m, b, statsClient)
+		mb.HandleStatsAllByCategory(m, b, statsClient)
 	})
 
 	b.Handle("/export", func(m *tb.Message) {
-		handleExport(m, b)
+		mb.HandleExport(m, b)
 	})
 	b.Handle("/delete", func(m *tb.Message) {
-		handleDelete(m, b)
+		mb.HandleDelete(m, b)
 	})
 
 	b.Start()
