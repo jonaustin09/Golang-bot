@@ -1,0 +1,3 @@
+db_file: db.sqlite3
+enable_file_log: false
+enable_sql_log: true

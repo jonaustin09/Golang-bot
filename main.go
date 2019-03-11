@@ -5,11 +5,14 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
+
+	"github.com/spf13/viper"
+
 	"github.com/dobrovolsky/money_bot/stats"
 	"google.golang.org/grpc"
 
 	"github.com/jinzhu/gorm"
-	"github.com/joho/godotenv"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 
@@ -21,40 +24,70 @@ import (
 const NOTIFICATIONTIMEOUT = 10 * time.Second
 
 var db = &gorm.DB{}
+var config = &Config{}
+
+type Config struct {
+	dbFile        string
+	logIntoFile   bool
+	logSQL        bool
+	telegramToken string
+	GRPCServer    string
+}
+
+func initConfig() (*Config, error) {
+	v := viper.New()
+
+	err := godotenv.Load()
+	check(err)
+
+	v.SetDefault("db_file", "db.sqlite3")
+	v.SetDefault("enable_file_log", true)
+	v.SetDefault("enable_sql_log", true)
+
+	v.SetConfigName("config")
+	v.AddConfigPath(".")
+	v.AutomaticEnv()
+
+	err = v.ReadInConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	config := &Config{}
+	config.logIntoFile = v.GetBool("enable_file_log")
+	config.logSQL = v.GetBool("enable_sql_log")
+	config.dbFile = v.GetString("db_file")
+	config.telegramToken = os.Getenv("TELEGRAM_TOKEN")
+	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
+
+	return config, nil
+}
 
 func main() {
-	// TODO: add setting file
-	logIntoFile := true
-	logSQL := true
 	var err error
 	var loggerFile io.Writer
 
-	if logIntoFile {
+	config, err = initConfig()
+	check(err)
+
+	if config.logIntoFile {
 		loggerFile, err = os.Create("bot.log")
 		check(err)
 	} else {
 		loggerFile = os.Stdout
 	}
 
-	log.SetFormatter(&log.TextFormatter{})
-	log.SetOutput(loggerFile)
-
-	err = godotenv.Load()
-	check(err)
-
-	token := os.Getenv("TELEGRAM_TOKEN")
-
 	b, err := tb.NewBot(tb.Settings{
-		Token:  token,
+		Token:  config.telegramToken,
 		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
 	})
 	check(err)
 
-	db, err = gorm.Open("sqlite3", "db.sqlite3")
+	db, err = gorm.Open("sqlite3", config.dbFile)
 	check(err)
 	defer db.Close()
 
-	if logSQL {
+	if config.logSQL {
 		logger := log.StandardLogger()
 		logger.Out = loggerFile
 		db.SetLogger(logger)

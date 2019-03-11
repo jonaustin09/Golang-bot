@@ -17,3 +17,5 @@ RUN rm -rf protoc-3.7.0-linux-x86_64*
 
 RUN go get google.golang.org/grpc
 RUN go get github.com/golang/protobuf/protoc-gen-go
+
+RUN go get github.com/spf13/viper
