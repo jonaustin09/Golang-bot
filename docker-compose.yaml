@@ -5,9 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command:  bash -c "cd /go/src/github.com/dobrovolsky/money_bot/ && rm --f build && go build -o build && ./build"
+    command:  bash -c "rm --f build && go build -o build && ./build"
     volumes:
     - .:/go/src/github.com/dobrovolsky/money_bot/
+    working_dir: /go/src/github.com/dobrovolsky/money_bot/
     depends_on:
       - stats
 
@@ -15,6 +16,6 @@ services:
     build:
       context: stats
       dockerfile: Dockerfile
-    command: bash -c "cd /code/stats/ && poetry run python server.py"
+    command: bash -c "poetry run python ploting/server.py"
     volumes:
-    - .:/code
+    - ./stats:/code
