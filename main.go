@@ -5,10 +5,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/joho/godotenv"
-
-	"github.com/spf13/viper"
-
 	"github.com/dobrovolsky/money_bot/stats"
 	"google.golang.org/grpc"
 
@@ -19,49 +15,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 	log "github.com/sirupsen/logrus"
 )
-
-// NOTIFICATIONTIMEOUT is used for removing system notifications
-const NOTIFICATIONTIMEOUT = 10 * time.Second
-
-var db = &gorm.DB{}
-var config = &Config{}
-
-type Config struct {
-	dbFile        string
-	logIntoFile   bool
-	logSQL        bool
-	telegramToken string
-	GRPCServer    string
-}
-
-func initConfig() (*Config, error) {
-	v := viper.New()
-
-	err := godotenv.Load()
-	check(err)
-
-	v.SetDefault("db_file", "db.sqlite3")
-	v.SetDefault("enable_file_log", true)
-	v.SetDefault("enable_sql_log", true)
-
-	v.SetConfigName("config")
-	v.AddConfigPath(".")
-	v.AutomaticEnv()
-
-	err = v.ReadInConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	config := &Config{}
-	config.logIntoFile = v.GetBool("enable_file_log")
-	config.logSQL = v.GetBool("enable_sql_log")
-	config.dbFile = v.GetString("db_file")
-	config.telegramToken = os.Getenv("TELEGRAM_TOKEN")
-	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
-
-	return config, nil
-}
 
 func main() {
 	var err error
