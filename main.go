@@ -48,9 +48,6 @@ func main() {
 		mb.Db.LogMode(true)
 	}
 
-	// Migrate the schema
-	mb.Db.AutoMigrate(&mb.User{}, &mb.LogItem{}, &mb.Category{})
-
 	grpServerAddress := os.Getenv("GRPC_SERVER_ADDRESS")
 	conn, err := grpc.Dial(grpServerAddress, grpc.WithInsecure())
 	mb.Check(err)
@@ -81,7 +78,6 @@ func main() {
 
 	b.Handle("/stat_all_by_month", func(m *tb.Message) {
 		mb.HandleStatsAllByMonth(m, b, statsClient)
-
 	})
 
 	b.Handle("/stat_all_by_category", func(m *tb.Message) {

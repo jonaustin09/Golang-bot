@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"time"
 
-	uuid "github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // LogItem stores information about each log item
 type LogItem struct {
-	ID             string `gorm:"primary_key"`
+	ID             string
 	CreatedAt      uint64
 	Name           string
 	Amount         float64
@@ -41,8 +41,6 @@ func (logItem *LogItem) String() string {
 }
 
 func (logItem *LogItem) toCSV() []string {
-	// TODO: think about this extra query
-
 	return []string{
 		strconv.FormatInt(int64(logItem.CreatedAt), 10),
 		logItem.Name,

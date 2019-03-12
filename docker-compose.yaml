@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command:  bash -c "rm --f build && go build -o build && ./build"
+    command:  ./entry_point.sh
     volumes:
     - .:/go/src/github.com/dobrovolsky/money_bot/
     working_dir: /go/src/github.com/dobrovolsky/money_bot/

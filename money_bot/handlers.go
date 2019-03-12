@@ -38,6 +38,9 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot) {
 	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
+	inputLogger := InputLog{}
+	inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
+
 	if m.ReplyTo != nil {
 		if !recordExists(uint64(m.ReplyTo.ID)) {
 			text := "You can not edit this message"
@@ -76,6 +79,9 @@ func HandleEdit(m *tb.Message, b *tb.Bot) {
 
 	parsedData := getParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
+
+	inputLogger := InputLog{}
+	inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
 
 	editLogs(uint64(m.ID), m.Sender, b, parsedData)
 }

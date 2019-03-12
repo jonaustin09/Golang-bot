@@ -3,7 +3,7 @@ FROM golang:1.12
 RUN go get github.com/jinzhu/gorm
 RUN go get github.com/sirupsen/logrus
 RUN go get gopkg.in/tucnak/telebot.v2
-RUN go get github.com/satori/go.uuid
+RUN go get github.com/gofrs/uuid
 RUN go get github.com/mattn/go-sqlite3
 RUN go get github.com/joho/godotenv
 
@@ -19,3 +19,4 @@ RUN go get google.golang.org/grpc
 RUN go get github.com/golang/protobuf/protoc-gen-go
 
 RUN go get github.com/spf13/viper
+RUN go get github.com/pressly/goose/cmd/goose

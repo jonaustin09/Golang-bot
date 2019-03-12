@@ -7,8 +7,8 @@ import (
 // Category stores users' category
 type Category struct {
 	ID             uint64
-	Name           string `gorm:"INDEX"`
-	TelegramUserID uint64 `gorm:"INDEX"`
+	Name           string
+	TelegramUserID uint64
 	createdAt      uint64
 }
 
