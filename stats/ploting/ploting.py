@@ -9,6 +9,19 @@ def prepare_dataframe(data) -> pd.DataFrame:
     return df
 
 
+def post_generate(plt):
+    plt.spines['right'].set_visible(False)
+    plt.spines['top'].set_visible(False)
+    plt.spines['left'].set_visible(False)
+    plt.spines['bottom'].set_visible(False)
+
+    for tick in filter(lambda x: x >= 0, plt.get_yticks()):
+        plt.axvline(x=tick, linestyle='dashed', alpha=0.4, color='#eeeeee',
+                    zorder=1)
+
+    return plt
+
+
 def get_all_time_by_month_stat(data):
     df = prepare_dataframe(data)
 
@@ -17,23 +30,13 @@ def get_all_time_by_month_stat(data):
                        title='for all time', grid=True, legend=False,
                        kind='line')
 
-    plt.spines['right'].set_visible(False)
-    plt.spines['top'].set_visible(False)
-    plt.spines['left'].set_visible(False)
-    plt.spines['bottom'].set_visible(False)
-
     plt.set_ylabel("Amount", labelpad=20, weight='bold', size=12)
     plt.set_xlabel("Month", labelpad=20, weight='bold', size=12)
 
     plt.tick_params(axis="both", which="both", bottom=False, top=False,
                     labelbottom=True, left=False, right=False, labelleft=True)
 
-    # Draw horizontal axis lines
-    for val in filter(lambda x: x >= 0, plt.get_yticks()):
-        plt.axhline(y=val, linestyle='dashed', alpha=0.3, color='#eeeeee',
-                    zorder=1)
-
-    return plt
+    return post_generate(plt)
 
 
 def get_all_time_category_stat(data):
@@ -45,19 +48,10 @@ def get_all_time_category_stat(data):
                   width=0.85, title='categories for all time', kind='barh',
                   legend=False, )
 
-    plt.spines['right'].set_visible(False)
-    plt.spines['top'].set_visible(False)
-    plt.spines['left'].set_visible(False)
-    plt.spines['bottom'].set_visible(False)
-
-    for tick in plt.get_xticks():
-        plt.axvline(x=tick, linestyle='dashed', alpha=0.4, color='#eeeeee',
-                    zorder=1)
-
     plt.set_ylabel("Category", labelpad=20, weight='bold', size=12)
     plt.set_xlabel("Amount", labelpad=20, weight='bold', size=12)
 
     for y, x in enumerate(sm['amount']):
         plt.annotate("%.2f" % x, xy=(x, y), va='center')
 
-    return plt
+    return post_generate(plt)
