@@ -70,7 +70,11 @@ func (logItem *LogItem) createRecord(parsedData ParsedData, MessageID uint64, se
 		category := Category{}
 		err = category.fetchMostRelevantForItem(logItem.Name, logItem.TelegramUserID)
 		if err == nil {
-			logItem.CategoryID = category.ID
+			if category.ID == 0 {
+				logItem.CategoryID = 9999
+			} else {
+				logItem.CategoryID = category.ID
+			}
 		}
 	}
 
