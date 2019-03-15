@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-echo "Fetch dependencies..."
 export GO111MODULE=on
-go mod tidy
 
 echo "Apply migrations..."
 cd migrations

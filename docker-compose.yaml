@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    command:  ./entry_point.sh
+    command:  ./docker_entrypoint.sh
     volumes:
     - .:/go/src/github.com/dobrovolsky/money_bot/
     - cache:/go

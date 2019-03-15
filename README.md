@@ -1,3 +1,6 @@
+### What if you want to try:
+https://t.me/your_money_helper_bot
+
 ### How to deploy?
 1) run `docker-compose -f docker-compose.yaml up`
 
