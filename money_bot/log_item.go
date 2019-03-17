@@ -119,7 +119,7 @@ func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) err
 
 func getRecordsByTelegramID(SenderID uint64) ([]LogItem, error) {
 	var items []LogItem
-	if err := Db.Where("telegram_user_id = ?", SenderID).Find(&items).Order("created_at").Error; err != nil {
+	if err := Db.Where("telegram_user_id = ?", SenderID).Order("created_at").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
@@ -130,7 +130,7 @@ func getRecordsByTelegramIDCurrentMonth(SenderID uint64) ([]LogItem, error) {
 
 	beginOfMonth := uint64(now.BeginningOfMonth().UnixNano() / int64(time.Second))
 
-	if err := Db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Find(&items).Order("created_at").Error; err != nil {
+	if err := Db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Order("created_at").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
