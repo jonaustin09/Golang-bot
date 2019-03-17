@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jinzhu/now"
+
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -37,14 +39,14 @@ func (logItem *LogItem) String() string {
 
 	inCategotyString = fmt.Sprintf("in %s", category.Name)
 
-	return fmt.Sprintf("%s %s %v %s", timeString, logItem.Name, logItem.Amount, inCategotyString)
+	return fmt.Sprintf("%s %s %.2f %s", timeString, logItem.Name, logItem.Amount, inCategotyString)
 }
 
 func (logItem *LogItem) toCSV() []string {
 	return []string{
 		strconv.FormatInt(int64(logItem.CreatedAt), 10),
 		logItem.Name,
-		fmt.Sprintf("%f", logItem.Amount),
+		fmt.Sprintf("%.2f", logItem.Amount),
 		logItem.Category.Name,
 	}
 }
@@ -121,6 +123,28 @@ func getRecordsByTelegramID(SenderID uint64) ([]LogItem, error) {
 		return nil, err
 	}
 	return items, nil
+}
+
+func getRecordsByTelegramIDCurrentMonth(SenderID uint64) ([]LogItem, error) {
+	var items []LogItem
+
+	beginOfMonth := uint64(now.BeginningOfMonth().UnixNano() / int64(time.Second))
+
+	if err := Db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Find(&items).Order("created_at").Error; err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+type res struct {
+	Result float64
+}
+
+func getSumByTelegramIDCurrentMonth(SenderID uint64) (float64, error) {
+	beginOfMonth := uint64(now.BeginningOfMonth().UnixNano() / int64(time.Second))
+	val := res{}
+	Db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Select("SUM(amount) as result").Model(&LogItem{}).Scan(&val)
+	return val.Result, nil
 }
 
 func deleteRecordsByMessageID(MessageID uint64) error {

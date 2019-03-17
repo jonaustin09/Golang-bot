@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"os"
 
+	"google.golang.org/grpc"
+
 	"github.com/dobrovolsky/money_bot/stats"
 	"github.com/sirupsen/logrus"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
+
+type remote func(ctx context.Context, in *stats.LogItemQueryMessage, opts ...grpc.CallOption) (*stats.ImageMessage, error)
 
 func HandleStart(m *tb.Message, b *tb.Bot) {
 	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
@@ -114,39 +118,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
-	if len(items) == 0 {
-		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		Check(err)
-		return
-	}
-
-	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
-	for _, item := range items {
-		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
-			CreatedAt: int64(item.CreatedAt),
-			Name:      item.Name,
-			Amount:    float32(item.Amount),
-		})
-	}
-
-	response, err := c.GetAllTimeByMonthStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: itemsForAnalyze,
-	})
-	Check(err)
-
-	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
-	file, err := os.Create(fileName)
-	Check(err)
-
-	defer os.Remove(fileName)
-	defer file.Close()
-
-	file.Write(response.Res)
-
-	document := &tb.Photo{File: tb.FromDisk(fileName)}
-
-	_, err = b.Send(m.Sender, document)
-	Check(err)
+	sendStat(items, m, b, c.GetAllTimeByMonthStat)
 }
 
 func HandleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
@@ -160,40 +132,26 @@ func HandleStatsAllByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
-	if len(items) == 0 {
-		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		Check(err)
-		return
-	}
+	sendStat(items, m, b, c.GetAllTimeCategoryStat)
+}
 
-	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
-	for _, item := range items {
-		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
-			CreatedAt: int64(item.CreatedAt),
-			Name:      item.Name,
-			Amount:    float32(item.Amount),
-			Category:  item.Category.Name,
-		})
-	}
+func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+	logrus.Infof("Start HandleStatsByCategory request with %s by %v", m.Text, m.Sender.ID)
+	var err error
 
-	response, err := c.GetAllTimeCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: itemsForAnalyze,
-	})
+	Db.InstantSet("gorm:auto_preload", true)
+	defer Db.InstantSet("gorm:auto_preload", false)
+
+	items, err := getRecordsByTelegramIDCurrentMonth(uint64(m.Sender.ID))
+	Check(err)
+	logrus.Infof("Fetch items count %v", len(items))
+
+	sendStat(items, m, b, c.GetAllTimeCategoryStat)
+
+	val, err := getSumByTelegramIDCurrentMonth(uint64(m.Sender.ID))
 	Check(err)
 
-	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
-	file, err := os.Create(fileName)
-	Check(err)
-
-	defer os.Remove(fileName)
-	defer file.Close()
-
-	file.Write(response.Res)
-
-	document := &tb.Photo{File: tb.FromDisk(fileName)}
-
-	_, err = b.Send(m.Sender, document)
-	Check(err)
+	b.Send(m.Sender, fmt.Sprintf("Total: %.2f", val))
 }
 
 func HandleExport(m *tb.Message, b *tb.Bot) {
@@ -235,6 +193,44 @@ func HandleExport(m *tb.Message, b *tb.Bot) {
 	_, err = b.Send(m.Sender, document)
 	Check(err)
 	logrus.Info("Send file to ", m.Sender.ID)
+}
+
+func sendStat(items []LogItem, m *tb.Message, b *tb.Bot, r remote) {
+
+	if len(items) == 0 {
+		_, err := b.Send(m.Sender, "There are not any records yet 😒")
+		Check(err)
+		return
+	}
+
+	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
+	for _, item := range items {
+		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
+			CreatedAt: int64(item.CreatedAt),
+			Name:      item.Name,
+			Amount:    float32(item.Amount),
+			Category:  item.Category.Name,
+		})
+	}
+
+	response, err := r(context.Background(), &stats.LogItemQueryMessage{
+		LogItems: itemsForAnalyze,
+	})
+	Check(err)
+
+	fileName := fmt.Sprintf("%v-%v-stats.png", m.Sender.ID, timestamp())
+	file, err := os.Create(fileName)
+	Check(err)
+
+	defer os.Remove(fileName)
+	defer file.Close()
+
+	file.Write(response.Res)
+
+	document := &tb.Photo{File: tb.FromDisk(fileName)}
+
+	_, err = b.Send(m.Sender, document)
+	Check(err)
 }
 
 func editLogs(messageID uint64, sender *tb.User, b *tb.Bot, parsedData []ParsedData) {

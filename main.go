@@ -5,8 +5,9 @@ import (
 	"os"
 	"time"
 
-	mb "github.com/dobrovolsky/money_bot/money_bot"
 	"github.com/dobrovolsky/money_bot/stats"
+
+	mb "github.com/dobrovolsky/money_bot/money_bot"
 	"google.golang.org/grpc"
 
 	"github.com/jinzhu/gorm"
@@ -82,6 +83,10 @@ func main() {
 
 	b.Handle("/stat_all_by_category", func(m *tb.Message) {
 		mb.HandleStatsAllByCategory(m, b, statsClient)
+	})
+
+	b.Handle("/stat_by_category", func(m *tb.Message) {
+		mb.HandleStatsByCategory(m, b, statsClient)
 	})
 
 	b.Handle("/export", func(m *tb.Message) {
