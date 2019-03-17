@@ -1,4 +1,7 @@
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import six
 
 
 def prepare_dataframe(data) -> pd.DataFrame:
@@ -22,7 +25,50 @@ def post_generate(plt):
     return plt
 
 
-def get_all_time_by_month_stat(data):
+def get_month_amount_stat(data):
+    df = prepare_dataframe(data)
+
+    g = df.groupby(pd.Grouper(freq="M"))
+
+    frame = g['amount'].sum().to_frame()
+
+    frame['timestamp'] = frame.index
+    frame['month'] = frame['timestamp'].dt.strftime('%d/%m/%Y')
+    frame.reset_index(drop=True, inplace=True)
+    frame.drop(['timestamp'], axis=1)
+    frame['amount'] = frame['amount'].round(2)
+
+    frame = frame[['month', 'amount']]
+
+    size = (np.array(frame.shape[::-1]) + np.array([0, 1])) * np.array(
+        [2.650, 0.625])
+
+    _, ax = plt.subplots(figsize=size)
+    ax.axis('off')
+
+    mpl_table = ax.table(
+        cellText=frame.values,
+        bbox=[0, 0, 1, 1],
+        colLabels=frame.columns,
+        cellLoc='center',
+    )
+
+    mpl_table.auto_set_font_size(False)
+    mpl_table.set_fontsize(14)
+
+    row_colors = ['#f1f1f2', 'w']
+
+    for k, cell in six.iteritems(mpl_table._cells):
+        cell.set_edgecolor('w')
+        if k[0] == 0 or k[1] < 0:
+            cell.set_text_props(weight='bold', color='w')
+            cell.set_facecolor('#86bf91')
+        else:
+            cell.set_facecolor(row_colors[k[0] % len(row_colors)])
+    return ax
+
+
+def get_month_stat(data):
     df = prepare_dataframe(data)
 
     g = df.groupby(pd.Grouper(freq="M"))
@@ -42,7 +88,7 @@ def get_all_time_by_month_stat(data):
     return post_generate(plt)
 
 
-def get_all_time_category_stat(data):
+def get_category_stat(data):
     df = prepare_dataframe(data)
 
     g = df.groupby(by='category')

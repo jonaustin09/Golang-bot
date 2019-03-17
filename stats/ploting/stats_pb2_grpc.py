@@ -14,13 +14,18 @@ class StatsStub(object):
     Args:
       channel: A grpc.Channel.
     """
-    self.GetAllTimeByMonthStat = channel.unary_unary(
-        '/stats.Stats/GetAllTimeByMonthStat',
+    self.GetMonthStat = channel.unary_unary(
+        '/stats.Stats/GetMonthStat',
         request_serializer=stats__pb2.LogItemQueryMessage.SerializeToString,
         response_deserializer=stats__pb2.ImageMessage.FromString,
         )
-    self.GetAllTimeCategoryStat = channel.unary_unary(
-        '/stats.Stats/GetAllTimeCategoryStat',
+    self.GetCategoryStat = channel.unary_unary(
+        '/stats.Stats/GetCategoryStat',
+        request_serializer=stats__pb2.LogItemQueryMessage.SerializeToString,
+        response_deserializer=stats__pb2.ImageMessage.FromString,
+        )
+    self.GetMonthAmountStat = channel.unary_unary(
+        '/stats.Stats/GetMonthAmountStat',
         request_serializer=stats__pb2.LogItemQueryMessage.SerializeToString,
         response_deserializer=stats__pb2.ImageMessage.FromString,
         )
@@ -30,14 +35,21 @@ class StatsServicer(object):
   # missing associated documentation comment in .proto file
   pass
 
-  def GetAllTimeByMonthStat(self, request, context):
+  def GetMonthStat(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def GetAllTimeCategoryStat(self, request, context):
+  def GetCategoryStat(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
+  def GetMonthAmountStat(self, request, context):
     # missing associated documentation comment in .proto file
     pass
     context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -47,13 +59,18 @@ class StatsServicer(object):
 
 def add_StatsServicer_to_server(servicer, server):
   rpc_method_handlers = {
-      'GetAllTimeByMonthStat': grpc.unary_unary_rpc_method_handler(
-          servicer.GetAllTimeByMonthStat,
+      'GetMonthStat': grpc.unary_unary_rpc_method_handler(
+          servicer.GetMonthStat,
           request_deserializer=stats__pb2.LogItemQueryMessage.FromString,
           response_serializer=stats__pb2.ImageMessage.SerializeToString,
       ),
-      'GetAllTimeCategoryStat': grpc.unary_unary_rpc_method_handler(
-          servicer.GetAllTimeCategoryStat,
+      'GetCategoryStat': grpc.unary_unary_rpc_method_handler(
+          servicer.GetCategoryStat,
+          request_deserializer=stats__pb2.LogItemQueryMessage.FromString,
+          response_serializer=stats__pb2.ImageMessage.SerializeToString,
+      ),
+      'GetMonthAmountStat': grpc.unary_unary_rpc_method_handler(
+          servicer.GetMonthAmountStat,
           request_deserializer=stats__pb2.LogItemQueryMessage.FromString,
           response_serializer=stats__pb2.ImageMessage.SerializeToString,
       ),

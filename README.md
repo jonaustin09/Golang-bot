@@ -1,5 +1,10 @@
 ### What if you want to try:
 https://t.me/your_money_helper_bot
+Commands:
+- `stat_all_by_month` - get statistic based aggerated by month🤓
+- `stat_by_category` - get statistic of your spending based on categories🤓
+- `export` - get your data into csv file 📄
+- `delete` - can delete selected message from log 🌚
 
 ### How to deploy?
 1) run `docker-compose -f docker-compose.yaml up`

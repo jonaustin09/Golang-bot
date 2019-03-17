@@ -637,7 +637,7 @@ version = "3.4.2"
 notebook = ">=4.4.1"
 
 [metadata]
-content-hash = "f644ddc0bef2433cb59998dfc12c5053535d13923a7c6f529cdecd0306e918b6"
+content-hash = "07cccb59028a23b040593646b5586bca043a732cdef289464c1ad8ae8c934682"
 python-versions = "^3.7"
 
 [metadata.hashes]

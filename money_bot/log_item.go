@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/dobrovolsky/money_bot/stats"
+
 	"github.com/jinzhu/now"
 
 	"github.com/gofrs/uuid"
@@ -136,21 +138,23 @@ func getRecordsByTelegramIDCurrentMonth(SenderID uint64) ([]LogItem, error) {
 	return items, nil
 }
 
-type res struct {
-	Result float64
-}
-
-func getSumByTelegramIDCurrentMonth(SenderID uint64) (float64, error) {
-	beginOfMonth := uint64(now.BeginningOfMonth().UnixNano() / int64(time.Second))
-	val := res{}
-	Db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Select("SUM(amount) as result").Model(&LogItem{}).Scan(&val)
-	return val.Result, nil
-}
-
 func deleteRecordsByMessageID(MessageID uint64) error {
 	return Db.Where("message_id = ?", MessageID).Delete(LogItem{}).Error
 }
 
 func recordExists(MessageID uint64) bool {
 	return !Db.Where("message_id = ?", MessageID).First(&LogItem{}).RecordNotFound()
+}
+
+func prepareForAnalyze(items []LogItem) []*stats.LogItemMessage {
+	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
+	for _, item := range items {
+		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
+			CreatedAt: int64(item.CreatedAt),
+			Name:      item.Name,
+			Amount:    float32(item.Amount),
+			Category:  item.Category.Name,
+		})
+	}
+	return itemsForAnalyze
 }

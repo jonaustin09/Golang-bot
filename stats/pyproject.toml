@@ -10,6 +10,7 @@ grpcio-tools = "^1.19"
 pandas = "^0.24.1"
 jupyter = "^1.0"
 matplotlib = "^3.0"
+numpy = "^1.16"
 
 [tool.poetry.dev-dependencies]
 

@@ -2,14 +2,16 @@ import io
 
 import grpc
 import time
-import hashlib
-import stats_pb2
-import stats_pb2_grpc
+
 from concurrent import futures
 
+import stats_pb2
+import stats_pb2_grpc
+
 from adapter import LogItemAdapter
-from ploting import get_all_time_by_month_stat
-from ploting import get_all_time_category_stat
+from ploting import get_month_stat
+from ploting import get_category_stat
+from ploting import get_month_amount_stat
 
 adapter = LogItemAdapter()
 
@@ -29,15 +31,21 @@ class StatsServicer(stats_pb2_grpc.StatsServicer):
 
         return stats_pb2.ImageMessage(res=buf.getvalue())
 
-    def GetAllTimeByMonthStat(self, request, context):
+    def GetMonthStat(self, request, context):
         data = adapter.get_items_as_dict(request.LogItems)
-        plt = get_all_time_by_month_stat(data)
+        plt = get_month_stat(data)
 
         return self.to_message(plt)
 
-    def GetAllTimeCategoryStat(self, request, context):
+    def GetMonthAmountStat(self, request, context):
         data = adapter.get_items_as_dict(request.LogItems)
-        plt = get_all_time_category_stat(data)
+        plt = get_month_amount_stat(data)
+
+        return self.to_message(plt)
+
+    def GetCategoryStat(self, request, context):
+        data = adapter.get_items_as_dict(request.LogItems)
+        plt = get_category_stat(data)
 
         return self.to_message(plt)
 

@@ -81,10 +81,6 @@ func main() {
 		mb.HandleStatsAllByMonth(m, b, statsClient)
 	})
 
-	b.Handle("/stat_all_by_category", func(m *tb.Message) {
-		mb.HandleStatsAllByCategory(m, b, statsClient)
-	})
-
 	b.Handle("/stat_by_category", func(m *tb.Message) {
 		mb.HandleStatsByCategory(m, b, statsClient)
 	})

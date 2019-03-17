@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='stats',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bstats.proto\x12\x05stats\"\x1b\n\x0cImageMessage\x12\x0b\n\x03res\x18\x01 \x01(\x0c\"S\n\x0eLogItemMessage\x12\x11\n\tCreatedAt\x18\x01 \x01(\x03\x12\x0c\n\x04Name\x18\x02 \x01(\t\x12\x0e\n\x06\x41mount\x18\x03 \x01(\x02\x12\x10\n\x08\x43\x61tegory\x18\x04 \x01(\t\">\n\x13LogItemQueryMessage\x12\'\n\x08LogItems\x18\x01 \x03(\x0b\x32\x15.stats.LogItemMessage2\xa0\x01\n\x05Stats\x12J\n\x15GetAllTimeByMonthStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12K\n\x16GetAllTimeCategoryStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0bstats.proto\x12\x05stats\"\x1b\n\x0cImageMessage\x12\x0b\n\x03res\x18\x01 \x01(\x0c\"S\n\x0eLogItemMessage\x12\x11\n\tCreatedAt\x18\x01 \x01(\x03\x12\x0c\n\x04Name\x18\x02 \x01(\t\x12\x0e\n\x06\x41mount\x18\x03 \x01(\x02\x12\x10\n\x08\x43\x61tegory\x18\x04 \x01(\t\">\n\x13LogItemQueryMessage\x12\'\n\x08LogItems\x18\x01 \x03(\x0b\x32\x15.stats.LogItemMessage2\xd9\x01\n\x05Stats\x12\x41\n\x0cGetMonthStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12\x44\n\x0fGetCategoryStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12G\n\x12GetMonthAmountStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x62\x06proto3')
 )
 
 
@@ -174,11 +174,11 @@ _STATS = _descriptor.ServiceDescriptor(
   index=0,
   serialized_options=None,
   serialized_start=201,
-  serialized_end=361,
+  serialized_end=418,
   methods=[
   _descriptor.MethodDescriptor(
-    name='GetAllTimeByMonthStat',
-    full_name='stats.Stats.GetAllTimeByMonthStat',
+    name='GetMonthStat',
+    full_name='stats.Stats.GetMonthStat',
     index=0,
     containing_service=None,
     input_type=_LOGITEMQUERYMESSAGE,
@@ -186,9 +186,18 @@ _STATS = _descriptor.ServiceDescriptor(
     serialized_options=None,
   ),
   _descriptor.MethodDescriptor(
-    name='GetAllTimeCategoryStat',
-    full_name='stats.Stats.GetAllTimeCategoryStat',
+    name='GetCategoryStat',
+    full_name='stats.Stats.GetCategoryStat',
     index=1,
+    containing_service=None,
+    input_type=_LOGITEMQUERYMESSAGE,
+    output_type=_IMAGEMESSAGE,
+    serialized_options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='GetMonthAmountStat',
+    full_name='stats.Stats.GetMonthAmountStat',
+    index=2,
     containing_service=None,
     input_type=_LOGITEMQUERYMESSAGE,
     output_type=_IMAGEMESSAGE,
