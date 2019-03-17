@@ -26,8 +26,11 @@ def get_all_time_by_month_stat(data):
     df = prepare_dataframe(data)
 
     g = df.groupby(pd.Grouper(freq="M"))
+
+    total = round(df['amount'].sum(), 2)
+
     plt = g.sum().plot(figsize=(15, 8), color='#86bf91', fontsize=12,
-                       title='for all time', grid=True, legend=False,
+                       title=f'Total: {total}', grid=True, legend=False,
                        kind='line')
 
     plt.set_ylabel("Amount", labelpad=20, weight='bold', size=12)
@@ -44,14 +47,20 @@ def get_all_time_category_stat(data):
 
     g = df.groupby(by='category')
     sm = g.sum().sort_values(by='amount', ascending=True)
+
+    total = round(sm['amount'].sum(), 2)
+
     plt = sm.plot(figsize=(8, 10), color='#86bf91', fontsize=12, zorder=2,
-                  width=0.85, title='categories for all time', kind='barh',
+                  width=0.85, title=f'Total: {total}', kind='barh',
                   legend=False, )
 
     plt.set_ylabel("Category", labelpad=20, weight='bold', size=12)
     plt.set_xlabel("Amount", labelpad=20, weight='bold', size=12)
 
     for y, x in enumerate(sm['amount']):
-        plt.annotate("%.2f" % x, xy=(x, y), va='center')
+        percentage = round(x * 100 / total, 2)
+        plt.annotate(
+            f'{round(x, 2)} / {percentage}%', xy=(x, y), va='center',
+        )
 
     return post_generate(plt)
