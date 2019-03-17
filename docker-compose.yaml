@@ -7,9 +7,9 @@ services:
       dockerfile: Dockerfile
     command:  ./docker_entrypoint.sh
     volumes:
-    - .:/go/src/github.com/dobrovolsky/money_bot/
+    - .:/go/src/github.com/dobrovolsky/moneybot/
     - cache:/go
-    working_dir: /go/src/github.com/dobrovolsky/money_bot/
+    working_dir: /go/src/github.com/dobrovolsky/moneybot/
     depends_on:
       - stats
 

@@ -1,4 +1,4 @@
-package money_bot
+package moneybot
 
 import (
 	"github.com/sirupsen/logrus"

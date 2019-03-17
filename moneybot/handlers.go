@@ -1,4 +1,4 @@
-package money_bot
+package moneybot
 
 import (
 	"bytes"
@@ -40,7 +40,8 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot) {
 	logrus.Info("Parsed data", parsedData)
 
 	inputLogger := InputLog{}
-	inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
+	err := inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
+	Check(err)
 
 	if m.ReplyTo != nil {
 		if !recordExists(uint64(m.ReplyTo.ID)) {
@@ -82,7 +83,8 @@ func HandleEdit(m *tb.Message, b *tb.Bot) {
 	logrus.Info("Parsed data", parsedData)
 
 	inputLogger := InputLog{}
-	inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
+	err := inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
+	Check(err)
 
 	editLogs(uint64(m.ID), m.Sender, b, parsedData)
 }

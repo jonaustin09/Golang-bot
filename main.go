@@ -7,7 +7,7 @@ import (
 
 	"github.com/dobrovolsky/money_bot/stats"
 
-	mb "github.com/dobrovolsky/money_bot/money_bot"
+	mb "github.com/dobrovolsky/money_bot/moneybot"
 	"google.golang.org/grpc"
 
 	"github.com/jinzhu/gorm"

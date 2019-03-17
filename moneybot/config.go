@@ -1,4 +1,4 @@
-package money_bot
+package moneybot
 
 import (
 	"os"
@@ -9,9 +9,13 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Db uses setup from main, for making query
 var Db = &gorm.DB{}
+
+// Confg uses setup from main
 var Confg = &Config{}
 
+// Config store configuration params
 type Config struct {
 	DbFile              string
 	LogIntoFile         bool
@@ -21,6 +25,7 @@ type Config struct {
 	NotificationTimeout time.Duration
 }
 
+// InitConfig init configurations from file and .env
 func InitConfig() (*Config, error) {
 	v := viper.New()
 

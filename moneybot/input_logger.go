@@ -1,11 +1,11 @@
-package money_bot
+package moneybot
 
 import (
 	"github.com/gofrs/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-// store input data for future analyze
+// InputLog store input data for future analyze
 type InputLog struct {
 	ID             string
 	Text           string
