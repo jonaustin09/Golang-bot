@@ -117,6 +117,12 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
+	if len(items) == 0 {
+		_, err = b.Send(m.Sender, "There are not any records yet 😒")
+		Check(err)
+		return
+	}
+
 	itemsForAnalyze := prepareForAnalyze(items)
 
 	logrus.Info("Call GetMonthStat")
@@ -150,26 +156,37 @@ func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
+	if len(items) == 0 {
+		_, err = b.Send(m.Sender, "There are not any records yet 😒")
+		Check(err)
+		return
+	}
+
+	album := tb.Album{}
+
 	logrus.Info("Call GetCategoryStat")
 	statAll, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
 		LogItems: prepareForAnalyze(items),
 	})
 	Check(err)
 
+	album = append(album, &tb.Photo{File: tb.FromReader(bytes.NewReader(statAll.Res))})
+
 	items, err = getRecordsByTelegramIDCurrentMonth(uint64(m.Sender.ID))
 	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
-	logrus.Info("Call GetCategoryStat")
-	statByCurrentMonth, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: prepareForAnalyze(items),
-	})
-	Check(err)
+	if len(items) != 0 {
+		logrus.Info("Call GetCategoryStat")
+		statByCurrentMonth, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
+			LogItems: prepareForAnalyze(items),
+		})
+		Check(err)
 
-	document1 := &tb.Photo{File: tb.FromReader(bytes.NewReader(statAll.Res))}
-	document2 := &tb.Photo{File: tb.FromReader(bytes.NewReader(statByCurrentMonth.Res))}
+		album = append(album, &tb.Photo{File: tb.FromReader(bytes.NewReader(statByCurrentMonth.Res))})
+	}
 
-	_, err = b.SendAlbum(m.Sender, tb.Album{document1, document2})
+	_, err = b.SendAlbum(m.Sender, album)
 	Check(err)
 }
 
