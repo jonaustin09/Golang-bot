@@ -24,7 +24,8 @@ func HandleStart(m *tb.Message, b *tb.Bot) {
 		m.Sender.LanguageCode, m.Sender.Username)
 
 	if isCreated {
-		text = "Hello there i'll help you with your finances!"
+		text = "Hello there i'll help you with your finances! \n" +
+			"Use the following format: `item amount`. *For example*: tea 10 (category name)"
 	} else {
 		text = "Welcome back!"
 	}
