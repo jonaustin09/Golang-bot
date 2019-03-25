@@ -138,10 +138,10 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 	})
 	Check(err)
 
-	document1 := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthStat.Res))}
-	document2 := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthAmountStat.Res))}
+	monthAmountStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthAmountStat.Res))}
+	monthStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthStat.Res))}
 
-	_, err = b.SendAlbum(m.Sender, tb.Album{document1, document2})
+	_, err = b.SendAlbum(m.Sender, tb.Album{monthStatDocument, monthAmountStatDocument})
 	Check(err)
 
 }
@@ -184,7 +184,7 @@ func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 		})
 		Check(err)
 
-		album = append(album, &tb.Photo{File: tb.FromReader(bytes.NewReader(statByCurrentMonth.Res))})
+		album = append(tb.Album{&tb.Photo{File: tb.FromReader(bytes.NewReader(statByCurrentMonth.Res))}}, album...)
 	}
 
 	_, err = b.SendAlbum(m.Sender, album)
