@@ -3,7 +3,6 @@ package moneybot
 import (
 	"errors"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/dobrovolsky/money_bot/stats"
@@ -27,26 +26,18 @@ type LogItem struct {
 }
 
 func (logItem *LogItem) String() string {
-	unixTime := time.Unix(int64(logItem.CreatedAt), 0)
-	timeString := unixTime.Format("02-01-2006")
+	localTime := getLocalTime(logItem.CreatedAt)
+	timeString := localTime.Format("02.01.2006")
 
-	inCategotyString := ""
-
-	category := Category{}
-	err := category.fetchByID(logItem.CategoryID)
-	if err != nil {
-		err = category.getDefault()
-		Check(err)
-	}
-
-	inCategotyString = fmt.Sprintf("in %s", category.Name)
-
-	return fmt.Sprintf("%s %s %.2f %s", timeString, logItem.Name, logItem.Amount, inCategotyString)
+	return fmt.Sprintf("%s %s %.2f %s", timeString, logItem.Name, logItem.Amount, logItem.Category.Name)
 }
 
 func (logItem *LogItem) toCSV() []string {
+	localTime := getLocalTime(logItem.CreatedAt)
+	timeString := localTime.Format("02.01.2006")
+
 	return []string{
-		strconv.FormatInt(int64(logItem.CreatedAt), 10),
+		timeString,
 		logItem.Name,
 		fmt.Sprintf("%.2f", logItem.Amount),
 		logItem.Category.Name,

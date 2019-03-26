@@ -13,6 +13,13 @@ func timestamp() uint64 {
 	return uint64(time.Now().UnixNano() / int64(time.Second))
 }
 
+func getLocalTime(timestamp uint64) time.Time {
+	unixTime := time.Unix(int64(timestamp), 0)
+	t, err := time.LoadLocation("Europe/Kiev")
+	Check(err)
+	return unixTime.In(t)
+}
+
 // Check Check result for errors
 func Check(err error) {
 	if err != nil {
