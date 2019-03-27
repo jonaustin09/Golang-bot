@@ -29,7 +29,18 @@ func (logItem *LogItem) String() string {
 	localTime := getLocalTime(logItem.CreatedAt)
 	timeString := localTime.Format("02.01.2006")
 
-	return fmt.Sprintf("%s %s %.2f %s", timeString, logItem.Name, logItem.Amount, logItem.Category.Name)
+	inCategotyString := ""
+
+	category := Category{}
+	err := category.fetchByID(logItem.CategoryID)
+	if err != nil {
+		err = category.getDefault()
+		Check(err)
+	}
+
+	inCategotyString = fmt.Sprintf("in %s", category.Name)
+
+	return fmt.Sprintf("%s %s %.2f %s", timeString, logItem.Name, logItem.Amount, inCategotyString)
 }
 
 func (logItem *LogItem) toCSV() []string {
