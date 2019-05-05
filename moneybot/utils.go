@@ -30,8 +30,10 @@ func Check(err error) {
 func deleteSystemMessage(m *tb.Message, b *tb.Bot) {
 	time.Sleep(Confg.NotificationTimeout)
 	err := b.Delete(m)
+	if err != nil {
+		logrus.Info(err)
+	}
 	logrus.Info("Remove service message ", m.ID)
-	Check(err)
 }
 
 func sendServiceMessage(to tb.Recipient, b *tb.Bot, text string) error {
