@@ -1,12 +1,12 @@
 import io
 
-import grpc
-import time
+import asyncio
 
-from concurrent import futures
+from grpclib.utils import graceful_exit
+from grpclib.server import Server
 
 import stats_pb2
-import stats_pb2_grpc
+import stats_grpc
 
 from adapter import LogItemAdapter
 from ploting import get_month_stat
@@ -16,67 +16,49 @@ from ploting import get_month_amount_stat
 adapter = LogItemAdapter()
 
 
-class StatsServicer(stats_pb2_grpc.StatsServicer):
-    def __init__(self, *args, **kwargs):
-        # TODO: add settings file
-        self.server_port = 50051
+class Stater(stats_grpc.StatsBase):
 
     @staticmethod
-    def to_message(plt):
+    async def send_plot(plt, stream):
         fig = plt.get_figure()
 
         buf = io.BytesIO()
         fig.savefig(buf, format='png', bbox_inches="tight")
         buf.seek(0)
 
-        return stats_pb2.ImageMessage(res=buf.getvalue())
+        await stream.send_message(stats_pb2.ImageMessage(res=buf.getvalue()))
 
-    def GetMonthStat(self, request, context):
+    async def GetMonthStat(self, stream):
+        request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
         data = adapter.get_items_as_dict(request.LogItems)
         plt = get_month_stat(data)
 
-        return self.to_message(plt)
+        await self.send_plot(plt, stream)
 
-    def GetMonthAmountStat(self, request, context):
+    async def GetMonthAmountStat(self, stream):
+        request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
         data = adapter.get_items_as_dict(request.LogItems)
         plt = get_month_amount_stat(data)
 
-        return self.to_message(plt)
+        await self.send_plot(plt, stream)
 
-    def GetCategoryStat(self, request, context):
+    async def GetCategoryStat(self, stream):
+        request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
         data = adapter.get_items_as_dict(request.LogItems)
         plt = get_category_stat(data)
 
-        return self.to_message(plt)
-
-    def start_server(self):
-        """
-        Function which actually starts the gRPC server, and preps
-        it for serving incoming connections
-        """
-        stats_server = grpc.server(
-            futures.ThreadPoolExecutor(max_workers=10))
-
-        # This line can be ignored
-        stats_pb2_grpc.add_StatsServicer_to_server(
-            StatsServicer(), stats_server)
-
-        # bind the server to the port defined above
-        stats_server.add_insecure_port('[::]:{}'.format(self.server_port))
-
-        # start the server
-        stats_server.start()
-        print('Stats Server running ...')
-
-        try:
-            # need an infinite loop since the above
-            # code is non blocking, and if I don't do this
-            # the program will exit
-            while True:
-                time.sleep(60 * 60 * 60)
-        except KeyboardInterrupt:
-            stats_server.stop(0)
-            print('Digestor Server Stopped ...')
+        await self.send_plot(plt, stream)
 
 
-StatsServicer().start_server()
+async def main(*, host='0.0.0.0', port=50051, loop=None):
+    loop = loop or asyncio.get_event_loop()
+
+    server = Server([Stater()], loop=loop)
+    with graceful_exit([server], loop=loop):
+        await server.start(host, port)
+        print(f'Serving on {host}:{port}')
+        await server.wait_closed()
+
+
+if __name__ == '__main__':
+    asyncio.run(main())
