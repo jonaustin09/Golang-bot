@@ -25,7 +25,7 @@ func HandleStart(m *tb.Message, b *tb.Bot) {
 
 	if isCreated {
 		text = "Hello there i'll help you with your finances! \n" +
-			"Use the following format: `item amount`. *For example*: tea 10 (category name)"
+			"Use the following format: `item amount`. *For example*: tea 10 (repository name)"
 	} else {
 		text = "Welcome back!"
 	}
@@ -57,7 +57,7 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot) {
 		var text string
 
 		if !parsedDataIsValid(parsedData) {
-			text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+			text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
 			err := sendServiceMessage(m.Sender, b, text)
 			Check(err)
 
