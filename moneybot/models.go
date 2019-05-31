@@ -1,4 +1,4 @@
-package moneybot2
+package moneybot
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ type InputLog struct {
 	CreatedAt      int32
 }
 
-// Store information about log
+// LogItem store information about log
 type LogItem struct {
 	ID             string
 	CreatedAt      int32
@@ -41,6 +41,7 @@ type LogItem struct {
 	Category       string
 }
 
+// String string presentation
 func (l *LogItem) String() string {
 	localTime := GetLocalTime(l.CreatedAt)
 	timeString := localTime.Format("02.01.2006")
@@ -48,6 +49,7 @@ func (l *LogItem) String() string {
 	return fmt.Sprintf("%s %s %.2f %s", timeString, l.Name, l.Amount, l.Category)
 }
 
+// toCSV get csv data
 func (l *LogItem) toCSV() []string {
 	localTime := GetLocalTime(l.CreatedAt)
 	timeString := localTime.Format("02.01.2006")
@@ -60,6 +62,7 @@ func (l *LogItem) toCSV() []string {
 	}
 }
 
+// PrepareForAnalyze creates message for gRPC
 func PrepareForAnalyze(items []LogItem) []*stats.LogItemMessage {
 	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
 	for _, item := range items {

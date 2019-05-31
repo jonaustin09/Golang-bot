@@ -7,7 +7,7 @@ import (
 
 	"github.com/dobrovolsky/money_bot/stats"
 
-	mb "github.com/dobrovolsky/money_bot/moneybot2"
+	mb "github.com/dobrovolsky/money_bot/moneybot"
 	"google.golang.org/grpc"
 
 	"github.com/jinzhu/gorm"
@@ -51,7 +51,12 @@ func main() {
 	if err != nil {
 		log.Error(err)
 	}
-	defer db.Close()
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 
 	db.InstantSet("gorm:auto_preload", true)
 
@@ -67,7 +72,12 @@ func main() {
 	if err != nil {
 		log.Error(err)
 	}
-	defer conn.Close()
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 	statsClient := stats.NewStatsClient(conn)
 
 	userRepository := mb.NewGormUserRepository(db)
@@ -86,20 +96,6 @@ func main() {
 		mb.HandleEdit(m, b, inputLogRepository, logItemRepository, config)
 	})
 
-	b.Handle(tb.OnPhoto, func(m *tb.Message) {
-		_, err := b.Send(m.Sender, "Sorry i don't support images 😓")
-		if err != nil {
-			log.Error(err)
-		}
-	})
-
-	b.Handle("/income", func(m *tb.Message) {
-		_, err := b.Send(m.Sender, "In development 💪")
-		if err != nil {
-			log.Error(err)
-		}
-	})
-
 	b.Handle("/stat_all_by_month", func(m *tb.Message) {
 		mb.HandleStatsAllByMonth(m, b, statsClient, logItemRepository)
 	})
@@ -113,6 +109,20 @@ func main() {
 	})
 	b.Handle("/delete", func(m *tb.Message) {
 		mb.HandleDelete(m, b, logItemRepository, config)
+	})
+
+	b.Handle(tb.OnPhoto, func(m *tb.Message) {
+		_, err := b.Send(m.Sender, "Sorry i don't support images 😓")
+		if err != nil {
+			log.Error(err)
+		}
+	})
+
+	b.Handle("/income", func(m *tb.Message) {
+		_, err := b.Send(m.Sender, "In development 💪")
+		if err != nil {
+			log.Error(err)
+		}
 	})
 
 	b.Start()

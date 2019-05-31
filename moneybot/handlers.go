@@ -8,158 +8,245 @@ import (
 	"os"
 
 	"github.com/dobrovolsky/money_bot/stats"
+
 	"github.com/sirupsen/logrus"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
 
-func HandleStart(m *tb.Message, b *tb.Bot) {
+// HandleStart greeting, saves information about user
+func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
 	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
 	var text string
 
-	uid := uint64(m.Sender.ID)
+	uid := int32(m.Sender.ID)
 
-	user := User{}
-	isCreated := user.fetchOrCreate(uid, m.Sender.FirstName, m.Sender.LastName,
-		m.Sender.LanguageCode, m.Sender.Username)
-
-	if isCreated {
-		text = "Hello there i'll help you with your finances! \n" +
-			"Use the following format: `item amount`. *For example*: tea 10 (repository name)"
-	} else {
-		text = "Welcome back!"
+	_, err := ur.FetchOrCreate(uid, m.Sender.FirstName, m.Sender.LastName, m.Sender.LanguageCode, m.Sender.Username)
+	if err != nil {
+		logrus.Error(err)
+		return
 	}
+	text = "Hello there i'll help you with your finances! \n" +
+		"Use the following format: `item amount`. *For example*: tea 10 (repository name)"
 
-	err := sendServiceMessage(m.Sender, b, text)
-	Check(err)
-
+	err = SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 }
 
-func HandleNewMessage(m *tb.Message, b *tb.Bot) {
+// HandleNewMessage process new messages
+func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
-	parsedData := getParsedData(m.Text)
+	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	inputLogger := InputLog{}
-	err := inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
-	Check(err)
+	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	if m.ReplyTo != nil {
-		if !recordExists(uint64(m.ReplyTo.ID)) {
+		if !lr.RecordExists(int32(m.ReplyTo.ID)) {
 			text := "You can not edit this message"
-			err := sendServiceMessage(m.Sender, b, text)
-			Check(err)
+			err := SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
 		} else {
-			editLogs(uint64(m.ReplyTo.ID), m.Sender, b, parsedData)
+			editLogs(int32(m.ReplyTo.ID), m.Sender, b, parsedData, lr, config)
 		}
 
 	} else {
 		var text string
 
-		if !parsedDataIsValid(parsedData) {
+		if !(len(parsedData) > 0) {
 			text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
-			err := sendServiceMessage(m.Sender, b, text)
-			Check(err)
+			err := SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
+			if err != nil {
+				logrus.Error(err)
+				return
+			}
 
 		} else {
 			for _, item := range parsedData {
-				logItem := LogItem{}
-				err := logItem.createRecord(item, uint64(m.ID), uint64(m.Sender.ID))
-				Check(err)
+				if item.Category == "" {
+					item.Category, err = lr.FetchMostRelevantCategory(item.Name, int32(m.Sender.ID))
+					if err != nil {
+						logrus.Error(err)
+					}
+				}
+				logItem, err := lr.CreateRecord(item, int32(m.ID), int32(m.Sender.ID))
+				if err != nil {
+					logrus.Error(err)
+					return
+				}
 
-				text = fmt.Sprintf("`Saved: %s`", logItem.String())
-				err = sendServiceMessage(m.Sender, b, text)
-				Check(err)
+				text = fmt.Sprintf("`Saved: %s`", logItem)
+				err = SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
+				if err != nil {
+					logrus.Error(err)
+				}
 			}
 
 		}
 	}
-
 }
 
-func HandleEdit(m *tb.Message, b *tb.Bot) {
+// HandleEdit allow to edit infromation from db for following message
+func HandleEdit(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 
-	parsedData := getParsedData(m.Text)
+	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	inputLogger := InputLog{}
-	err := inputLogger.createRecord(m.Text, uint64(m.Sender.ID))
-	Check(err)
+	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
+	if err != nil {
+		logrus.Error(err)
+	}
 
-	editLogs(uint64(m.ID), m.Sender, b, parsedData)
+	editLogs(int32(m.ID), m.Sender, b, parsedData, lr, config)
 }
 
-func HandleDelete(m *tb.Message, b *tb.Bot) {
-	logrus.Infof("Start handleDelete request with %s by %v", m.Text, m.Sender.ID)
-	if m.ReplyTo == nil {
-		text := "You should reply for a message which you want to delete ↩️"
-		err := sendServiceMessage(m.Sender, b, text)
-		Check(err)
+// editLogs tries to edit log
+func editLogs(messageID int32, sender *tb.User, b *tb.Bot, parsedData []ParsedData, lr LogItemRepository, config Config) {
+	logrus.Info("Start editing")
+	var text string
+	var err error
+
+	if !(len(parsedData) > 0) {
+		text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
+		err = SendServiceMessage(sender, b, text, config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+		}
+
 	} else {
-		err := deleteRecordsByMessageID(uint64(m.ReplyTo.ID))
-		Check(err)
+		text := "`Remove related items`"
+		err = SendServiceMessage(sender, b, text, config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+		}
+
+		err := lr.DeleteRecordsByMessageID(messageID)
+		if err != nil {
+			logrus.Error(err)
+		}
+
 		logrus.Info("Remove all related records")
 
-		text := "`Remove item`"
-		err = sendServiceMessage(m.Sender, b, text)
-		Check(err)
+		for _, item := range parsedData {
+			logItem, err := lr.CreateRecord(item, int32(messageID), int32(sender.ID))
+			if err != nil {
+				logrus.Error(err)
+			}
+
+			text = fmt.Sprintf("`Create: %s`", logItem.String())
+			err = SendServiceMessage(sender, b, text, config.NotificationTimeout)
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
 	}
 }
 
-func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+// HandleDelete allow to delete infromation from db for following message
+func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
+	logrus.Infof("Start handleDelete request with %s by %v", m.Text, m.Sender.ID)
+	if m.ReplyTo == nil {
+		text := "You should reply for a message which you want to delete ↩️"
+		err := SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	} else {
+		err := lr.DeleteRecordsByMessageID(int32(m.ReplyTo.ID))
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+		logrus.Info("Remove all related records")
+
+		text := "`Remove item`"
+		err = SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	}
+}
+
+// HandleStatsAllByMonth allow to get information grouped by monthes
+func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 
-	Db.InstantSet("gorm:auto_preload", true)
-	defer Db.InstantSet("gorm:auto_preload", false)
+	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
+	if err != nil {
+		logrus.Error(err)
+	}
 
-	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		Check(err)
+		if err != nil {
+			logrus.Error(err)
+		}
 		return
 	}
 
-	itemsForAnalyze := prepareForAnalyze(items)
+	itemsForAnalyze := PrepareForAnalyze(items)
 
 	logrus.Info("Call GetMonthStat")
 	monthStat, err := c.GetMonthStat(context.Background(), &stats.LogItemQueryMessage{
 		LogItems: itemsForAnalyze,
 	})
-	Check(err)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
 	logrus.Info("Call GetMonthAmountStat")
 	monthAmountStat, err := c.GetMonthAmountStat(context.Background(), &stats.LogItemQueryMessage{
 		LogItems: itemsForAnalyze,
 	})
-	Check(err)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
 	monthAmountStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthAmountStat.Res))}
 	monthStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthStat.Res))}
 
 	_, err = b.SendAlbum(m.Sender, tb.Album{monthStatDocument, monthAmountStatDocument})
-	Check(err)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 }
 
-func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
+// HandleStatsByCategory allow to get information grouped by categories
+func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 
-	Db.InstantSet("gorm:auto_preload", true)
-	defer Db.InstantSet("gorm:auto_preload", false)
+	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
-	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	Check(err)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		Check(err)
+		if err != nil {
+			logrus.Error(err)
+		}
 		return
 	}
 
@@ -167,60 +254,92 @@ func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient) {
 
 	logrus.Info("Call GetCategoryStat")
 	statAll, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: prepareForAnalyze(items),
+		LogItems: PrepareForAnalyze(items),
 	})
-	Check(err)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 
 	album = append(album, &tb.Photo{File: tb.FromReader(bytes.NewReader(statAll.Res))})
 
-	items, err = getRecordsByTelegramIDCurrentMonth(uint64(m.Sender.ID))
-	Check(err)
+	items, err = lr.GetRecordsByTelegramIDCurrentMonth(int32(m.Sender.ID))
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) != 0 {
 		logrus.Info("Call GetCategoryStat")
 		statByCurrentMonth, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-			LogItems: prepareForAnalyze(items),
+			LogItems: PrepareForAnalyze(items),
 		})
-		Check(err)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 
 		album = append(tb.Album{&tb.Photo{File: tb.FromReader(bytes.NewReader(statByCurrentMonth.Res))}}, album...)
 	}
 
 	_, err = b.SendAlbum(m.Sender, album)
-	Check(err)
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
-func HandleExport(m *tb.Message, b *tb.Bot) {
+// HandleExport allow to export data into csv file
+func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 	var err error
 
-	Db.InstantSet("gorm:auto_preload", true)
-	defer Db.InstantSet("gorm:auto_preload", false)
-
-	items, err := getRecordsByTelegramID(uint64(m.Sender.ID))
-	Check(err)
+	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
 		_, err = b.Send(m.Sender, "There are not any records yet 😒")
-		Check(err)
+		if err != nil {
+			logrus.Error(err)
+		}
 		return
 	}
 
-	fileName := fmt.Sprintf("%v-%v-export.csv", m.Sender.ID, timestamp())
+	fileName := fmt.Sprintf("%v-%v-export.csv", m.Sender.ID, Timestamp())
 	file, err := os.Create(fileName)
-	Check(err)
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
 	logrus.Info("Create file")
 
-	defer os.Remove(fileName)
-	defer file.Close()
+	defer func() {
+		err := os.Remove(fileName)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	}()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
+	}()
 
 	writer := csv.NewWriter(file)
 
 	for _, item := range items {
 		err = writer.Write(item.toCSV())
-		Check(err)
+		if err != nil {
+			logrus.Error(err)
+			return
+		}
 	}
 	writer.Flush()
 	logrus.Info("Save file")
@@ -228,37 +347,8 @@ func HandleExport(m *tb.Message, b *tb.Bot) {
 	document := &tb.Document{File: tb.FromDisk(fileName)}
 
 	_, err = b.Send(m.Sender, document)
-	Check(err)
-	logrus.Info("Send file to ", m.Sender.ID)
-}
-
-func editLogs(messageID uint64, sender *tb.User, b *tb.Bot, parsedData []ParsedData) {
-	logrus.Info("Start editing")
-	var text string
-	var err error
-
-	if !parsedDataIsValid(parsedData) {
-		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
-		err = sendServiceMessage(sender, b, text)
-		Check(err)
-
-	} else {
-		text := "`Remove related items`"
-		err = sendServiceMessage(sender, b, text)
-		Check(err)
-
-		err := deleteRecordsByMessageID(messageID)
-		Check(err)
-		logrus.Info("Remove all related records")
-
-		for _, item := range parsedData {
-			logItem := LogItem{}
-			err = logItem.createRecord(item, uint64(messageID), uint64(sender.ID))
-			Check(err)
-
-			text = fmt.Sprintf("`Create: %s`", logItem.String())
-			err = sendServiceMessage(sender, b, text)
-			Check(err)
-		}
+	if err != nil {
+		logrus.Error(err)
 	}
+	logrus.Info("Send file to ", m.Sender.ID)
 }

@@ -9,26 +9,25 @@ import (
 )
 
 // Timestamp returns unix now time
-func timestamp() uint64 {
-	return uint64(time.Now().UnixNano() / int64(time.Second))
+func Timestamp() int32 {
+	res := time.Now().UnixNano() / int64(time.Second)
+	return int32(res)
 }
 
-func getLocalTime(timestamp uint64) time.Time {
+// GetLocalTime utc time to Europe/Kiev
+func GetLocalTime(timestamp int32) time.Time {
+	// TODO: refactor this create user settings
 	unixTime := time.Unix(int64(timestamp), 0)
 	t, err := time.LoadLocation("Europe/Kiev")
-	Check(err)
-	return unixTime.In(t)
-}
-
-// Check Check result for errors
-func Check(err error) {
 	if err != nil {
 		logrus.Panic(err)
 	}
+	return unixTime.In(t)
 }
 
-func deleteSystemMessage(m *tb.Message, b *tb.Bot) {
-	time.Sleep(Confg.NotificationTimeout)
+// DeleteSystemMessage tries to delete sent message
+func DeleteSystemMessage(m *tb.Message, b *tb.Bot, timeout time.Duration) {
+	time.Sleep(timeout)
 	err := b.Delete(m)
 	if err != nil {
 		logrus.Info(err)
@@ -36,13 +35,14 @@ func deleteSystemMessage(m *tb.Message, b *tb.Bot) {
 	logrus.Info("Remove service message ", m.ID)
 }
 
-func sendServiceMessage(to tb.Recipient, b *tb.Bot, text string) error {
+// SendServiceMessage tries to sent message
+func SendServiceMessage(to tb.Recipient, b *tb.Bot, text string, displayTimeout time.Duration) error {
 	serviceMessage, err := b.Send(to, text, tb.ModeMarkdown, tb.Silent)
 	if err != nil {
 		return err
 	}
 	logrus.Infof("Send service message %v with text: %s", serviceMessage.ID, serviceMessage.Text)
-	go deleteSystemMessage(serviceMessage, b)
+	go DeleteSystemMessage(serviceMessage, b, displayTimeout)
 
 	return nil
 }

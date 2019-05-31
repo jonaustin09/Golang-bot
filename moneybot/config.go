@@ -4,16 +4,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/jinzhu/gorm"
 	"github.com/joho/godotenv"
 	"github.com/spf13/viper"
 )
-
-// Db uses setup from main, for making query
-var Db = &gorm.DB{}
-
-// Confg uses setup from main
-var Confg = &Config{}
 
 // Config store configuration params
 type Config struct {
@@ -30,7 +23,9 @@ func InitConfig() (*Config, error) {
 	v := viper.New()
 
 	err := godotenv.Load()
-	Check(err)
+	if err != nil {
+		return nil, err
+	}
 
 	v.SetDefault("db_file", "db.sqlite3")
 	v.SetDefault("enable_file_log", true)
