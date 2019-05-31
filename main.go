@@ -19,77 +19,110 @@ import (
 )
 
 func main() {
+
 	var err error
 	var loggerFile io.Writer
 
-	mb.Confg, err = mb.InitConfig()
-	mb.Check(err)
+	p_config, err := mb.InitConfig()
+	if err != nil {
+		panic(err)
+	}
 
-	if mb.Confg.LogIntoFile {
+	config := *p_config
+
+	if config.LogIntoFile {
 		loggerFile, err = os.Create("bot.log")
-		mb.Check(err)
+		if err != nil {
+			log.Error(err)
+		}
 	} else {
 		loggerFile = os.Stdout
 	}
 
 	b, err := tb.NewBot(tb.Settings{
-		Token:  mb.Confg.TelegramToken,
+		Token:  config.TelegramToken,
 		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
 	})
-	mb.Check(err)
+	if err != nil {
+		log.Error(err)
+	}
 
-	mb.Db, err = gorm.Open("sqlite3", mb.Confg.DbFile)
-	mb.Check(err)
-	defer mb.Db.Close()
+	db, err := gorm.Open("sqlite3", config.DbFile)
+	if err != nil {
+		log.Error(err)
+	}
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 
-	if mb.Confg.LogSQL {
+	db.InstantSet("gorm:auto_preload", true)
+
+	if config.LogSQL {
 		logger := log.StandardLogger()
 		logger.Out = loggerFile
-		mb.Db.SetLogger(logger)
-		mb.Db.LogMode(true)
+		db.SetLogger(logger)
+		db.LogMode(true)
 	}
 
 	grpServerAddress := os.Getenv("GRPC_SERVER_ADDRESS")
 	conn, err := grpc.Dial(grpServerAddress, grpc.WithInsecure())
-	mb.Check(err)
-	defer conn.Close()
+	if err != nil {
+		log.Error(err)
+	}
+	defer func() {
+		err := conn.Close()
+		if err != nil {
+			log.Error(err)
+		}
+	}()
 	statsClient := stats.NewStatsClient(conn)
 
+	userRepository := mb.NewGormUserRepository(db)
+	inputLogRepository := mb.NewGormInputLogRepository(db)
+	logItemRepository := mb.NewGormLogItemRepository(db)
+
 	b.Handle("/start", func(m *tb.Message) {
-		mb.HandleStart(m, b)
+		mb.HandleStart(m, b, userRepository, config)
 	})
 
 	b.Handle(tb.OnText, func(m *tb.Message) {
-		mb.HandleNewMessage(m, b)
+		mb.HandleNewMessage(m, b, inputLogRepository, logItemRepository, config)
 	})
 
 	b.Handle(tb.OnEdited, func(m *tb.Message) {
-		mb.HandleEdit(m, b)
+		mb.HandleEdit(m, b, inputLogRepository, logItemRepository, config)
+	})
+
+	b.Handle("/stat_all_by_month", func(m *tb.Message) {
+		mb.HandleStatsAllByMonth(m, b, statsClient, logItemRepository)
+	})
+
+	b.Handle("/stat_by_category", func(m *tb.Message) {
+		mb.HandleStatsByCategory(m, b, statsClient, logItemRepository)
+	})
+
+	b.Handle("/export", func(m *tb.Message) {
+		mb.HandleExport(m, b, logItemRepository)
+	})
+	b.Handle("/delete", func(m *tb.Message) {
+		mb.HandleDelete(m, b, logItemRepository, config)
 	})
 
 	b.Handle(tb.OnPhoto, func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "Sorry i don't support images 😓")
-		mb.Check(err)
+		if err != nil {
+			log.Error(err)
+		}
 	})
 
 	b.Handle("/income", func(m *tb.Message) {
 		_, err := b.Send(m.Sender, "In development 💪")
-		mb.Check(err)
-	})
-
-	b.Handle("/stat_all_by_month", func(m *tb.Message) {
-		mb.HandleStatsAllByMonth(m, b, statsClient)
-	})
-
-	b.Handle("/stat_by_category", func(m *tb.Message) {
-		mb.HandleStatsByCategory(m, b, statsClient)
-	})
-
-	b.Handle("/export", func(m *tb.Message) {
-		mb.HandleExport(m, b)
-	})
-	b.Handle("/delete", func(m *tb.Message) {
-		mb.HandleDelete(m, b)
+		if err != nil {
+			log.Error(err)
+		}
 	})
 
 	b.Start()

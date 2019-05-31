@@ -2,118 +2,71 @@ package moneybot
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
-	"github.com/dobrovolsky/money_bot/stats"
-
-	"github.com/jinzhu/now"
-
 	"github.com/gofrs/uuid"
+	"github.com/jinzhu/gorm"
+	"github.com/jinzhu/now"
 	"github.com/sirupsen/logrus"
 )
 
-// LogItem stores information about each log item
-type LogItem struct {
-	ID             string
-	CreatedAt      uint64
-	Name           string
-	Amount         float64
-	MessageID      uint64
-	TelegramUserID uint64
-	CategoryID     uint64   `gorm:"DEFAULT:9999"`
-	Category       Category `gorm:"auto_preload"`
+// LogItemRepository represent the logItem repository contract
+type LogItemRepository interface {
+	CreateRecord(parsedData ParsedData, MessageID int32, senderID int32) (*LogItem, error)
+	UpdateRecord(logItem *LogItem, parsedData ParsedData, senderID int32) error
+	GetRecordsByTelegramID(SenderID int32) ([]LogItem, error)
+	GetRecordsByTelegramIDCurrentMonth(SenderID int32) ([]LogItem, error)
+	DeleteRecordsByMessageID(MessageID int32) error
+	RecordExists(MessageID int32) bool
+	FetchMostRelevantCategory(name string, telegramUserID int32) (string, error)
 }
 
-func (logItem *LogItem) String() string {
-	localTime := getLocalTime(logItem.CreatedAt)
-	timeString := localTime.Format("02.01.2006")
-
-	inCategotyString := ""
-
-	category := Category{}
-	err := category.fetchByID(logItem.CategoryID)
-	if err != nil {
-		err = category.getDefault()
-		Check(err)
-	}
-
-	inCategotyString = fmt.Sprintf("in %s", category.Name)
-
-	return fmt.Sprintf("%s %s %.2f %s", timeString, logItem.Name, logItem.Amount, inCategotyString)
+// NewGormLogItemRepository creates new repository
+func NewGormLogItemRepository(db *gorm.DB) LogItemRepository {
+	return GormLogItemRepository{db: db}
 }
 
-func (logItem *LogItem) toCSV() []string {
-	localTime := getLocalTime(logItem.CreatedAt)
-	timeString := localTime.Format("02.01.2006")
-
-	return []string{
-		timeString,
-		logItem.Name,
-		fmt.Sprintf("%.2f", logItem.Amount),
-		logItem.Category.Name,
-	}
+// GormLogItemRepository reposito logItem
+type GormLogItemRepository struct {
+	db *gorm.DB
 }
 
-func (logItem *LogItem) createRecord(parsedData ParsedData, MessageID uint64, senderID uint64) error {
+// CreateRecord create new record of logItem
+func (r GormLogItemRepository) CreateRecord(parsedData ParsedData, MessageID int32, senderID int32) (*LogItem, error) {
 	uid, err := uuid.NewV4()
-	Check(err)
+	if err != nil {
+		return nil, err
+	}
+
+	logItem := LogItem{}
 
 	logItem.ID = uid.String()
 	logItem.Name = parsedData.Name
 	logItem.Amount = parsedData.Amount
+	logItem.Category = parsedData.Category
 	logItem.MessageID = MessageID
-	logItem.CreatedAt = timestamp()
+	logItem.CreatedAt = Timestamp()
 	logItem.TelegramUserID = senderID
 
-	if parsedData.hasCategory() {
-		category := Category{}
-		err = category.fetchOrCreate(parsedData.Category, senderID)
-		if err == nil {
-			logItem.CategoryID = category.ID
-		}
-	} else {
-		category := Category{}
-		err = category.fetchMostRelevantForItem(logItem.Name, logItem.TelegramUserID)
-		if err == nil {
-			if category.ID == 0 {
-				logItem.CategoryID = 9999
-			} else {
-				logItem.CategoryID = category.ID
-			}
-		}
-	}
-
 	logrus.Info("Create record logItem ", logItem)
-	err = Db.Create(&logItem).Error
-	return err
+	err = r.db.Create(&logItem).Error
+	if err != nil {
+		return nil, err
+	}
+	return &logItem, err
 }
 
-func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) error {
+// UpdateRecord update record of logItem
+func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, parsedData ParsedData, senderID int32) error {
 	if logItem.ID == "" {
 		return errors.New("can update only created items")
 	}
 
 	logItem.Name = parsedData.Name
 	logItem.Amount = parsedData.Amount
+	logItem.Category = parsedData.Category
 
-	if parsedData.hasCategory() {
-		category := Category{}
-		err := category.fetchOrCreate(parsedData.Category, senderID)
-		if err == nil {
-			logItem.CategoryID = category.ID
-		}
-	} else {
-		if logItem.CategoryID == 0 {
-			category := Category{}
-			err := category.fetchMostRelevantForItem(logItem.Name, logItem.TelegramUserID)
-			if err == nil {
-				logItem.CategoryID = category.ID
-			}
-		}
-	}
-
-	if err := Db.Save(&logItem).Error; err != nil {
+	if err := r.db.Save(&logItem).Error; err != nil {
 		return err
 	}
 	logrus.Info("Update record logItem ", logItem)
@@ -121,42 +74,55 @@ func (logItem *LogItem) updateRecord(parsedData ParsedData, senderID uint64) err
 	return nil
 }
 
-func getRecordsByTelegramID(SenderID uint64) ([]LogItem, error) {
+// GetRecordsByTelegramID get message by message id
+func (r GormLogItemRepository) GetRecordsByTelegramID(SenderID int32) ([]LogItem, error) {
 	var items []LogItem
-	if err := Db.Where("telegram_user_id = ?", SenderID).Order("created_at").Find(&items).Error; err != nil {
+	if err := r.db.Where("telegram_user_id = ?", SenderID).Order("created_at").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
-func getRecordsByTelegramIDCurrentMonth(SenderID uint64) ([]LogItem, error) {
+// GetRecordsByTelegramIDCurrentMonth delete's message by message id
+func (r GormLogItemRepository) GetRecordsByTelegramIDCurrentMonth(SenderID int32) ([]LogItem, error) {
 	var items []LogItem
 
 	beginOfMonth := uint64(now.BeginningOfMonth().UnixNano() / int64(time.Second))
 
-	if err := Db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Order("created_at").Find(&items).Error; err != nil {
+	if err := r.db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Order("created_at").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
-func deleteRecordsByMessageID(MessageID uint64) error {
-	return Db.Where("message_id = ?", MessageID).Delete(LogItem{}).Error
+// DeleteRecordsByMessageID delete's messages by message id
+func (r GormLogItemRepository) DeleteRecordsByMessageID(MessageID int32) error {
+	return r.db.Where("message_id = ?", MessageID).Delete(&LogItem{}).Error
 }
 
-func recordExists(MessageID uint64) bool {
-	return !Db.Where("message_id = ?", MessageID).First(&LogItem{}).RecordNotFound()
+// RecordExists check if message's log item is processed and saved into db
+func (r GormLogItemRepository) RecordExists(MessageID int32) bool {
+	return !r.db.Where("message_id = ?", MessageID).First(&LogItem{}).RecordNotFound()
 }
 
-func prepareForAnalyze(items []LogItem) []*stats.LogItemMessage {
-	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
-	for _, item := range items {
-		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
-			CreatedAt: int64(item.CreatedAt),
-			Name:      item.Name,
-			Amount:    float32(item.Amount),
-			Category:  item.Category.Name,
-		})
+// FetchMostRelevantCategory get most relevant category using count
+func (r GormLogItemRepository) FetchMostRelevantCategory(name string, telegramUserID int32) (string, error) {
+	type Result struct {
+		Category string
 	}
-	return itemsForAnalyze
+	var result Result
+
+	err := r.db.Raw(`
+	SELECT
+       log_items.category as category,
+       COUNT(*) AS count
+	FROM log_items 
+	WHERE log_items.name = ? AND log_items.telegram_user_id = ?
+	GROUP BY log_items.category
+	ORDER BY count DESC 
+	LIMIT 1;`, name, telegramUserID).Scan(&result).Error
+	if err != nil {
+		return "", err
+	}
+	return result.Category, nil
 }
