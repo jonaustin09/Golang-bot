@@ -41,12 +41,19 @@ type LogItem struct {
 	Category       string
 }
 
+func (l *LogItem) getCategoryNameOrDefault() string {
+	if l.Category == "" {
+		return "other"
+	}
+	return l.Category
+}
+
 // String string presentation
 func (l *LogItem) String() string {
 	localTime := GetLocalTime(l.CreatedAt)
 	timeString := localTime.Format("02.01.2006")
 
-	return fmt.Sprintf("%s %s %.2f %s", timeString, l.Name, l.Amount, l.Category)
+	return fmt.Sprintf("%s %s %.2f %s", timeString, l.Name, l.Amount, l.getCategoryNameOrDefault())
 }
 
 // toCSV get csv data
@@ -58,7 +65,7 @@ func (l *LogItem) toCSV() []string {
 		timeString,
 		l.Name,
 		fmt.Sprintf("%.2f", l.Amount),
-		l.Category,
+		l.getCategoryNameOrDefault(),
 	}
 }
 
@@ -70,7 +77,7 @@ func PrepareForAnalyze(items []LogItem) []*stats.LogItemMessage {
 			CreatedAt: int64(item.CreatedAt),
 			Name:      item.Name,
 			Amount:    float32(item.Amount),
-			Category:  item.Category,
+			Category:  item.getCategoryNameOrDefault(),
 		})
 	}
 	return itemsForAnalyze
