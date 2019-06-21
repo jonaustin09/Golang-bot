@@ -138,6 +138,12 @@ func editLogs(messageID int32, sender *tb.User, b *tb.Bot, parsedData []ParsedDa
 		logrus.Info("Remove all related records")
 
 		for _, item := range parsedData {
+			if item.Category == "" {
+				item.Category, err = lr.FetchMostRelevantCategory(item.Name, int32(sender.ID))
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
 			logItem, err := lr.CreateRecord(item, int32(messageID), int32(sender.ID))
 			if err != nil {
 				logrus.Error(err)
