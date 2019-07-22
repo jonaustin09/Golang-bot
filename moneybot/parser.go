@@ -1,11 +1,14 @@
 package moneybot
 
 import (
+	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/sirupsen/logrus"
+
+	tb "gopkg.in/tucnak/telebot.v2"
 )
 
 type myRegexp struct {
@@ -36,6 +39,47 @@ func (p *ParsedData) IsValid() bool {
 // HasCategory get info if repository is set
 func (p *ParsedData) HasCategory() bool {
 	return p.Category != ""
+}
+
+func (p ParsedData) ProcessSaving(messageID int32, sender *tb.User, b *tb.Bot, lr LogItemRepository, config Config) (*LogItem, error) {
+	var err error
+	if p.Category == "" {
+		p.Category, err = lr.FetchMostRelevantCategory(p.Name, int32(sender.ID))
+		if err != nil {
+			logrus.Error(err)
+		}
+	}
+	logp, err := lr.CreateRecord(p, int32(messageID), int32(sender.ID))
+	if err != nil {
+		return nil, err
+	}
+
+	return logp, nil
+}
+
+func SaveParsedData(parsedData []ParsedData, messageID int32, sender *tb.User, b *tb.Bot, lr LogItemRepository, config Config) {
+	var sum float64
+
+	var text strings.Builder
+
+	for _, item := range parsedData {
+		logp, err := item.ProcessSaving(messageID, sender, b, lr, config)
+		if err != nil {
+			logrus.Error(err)
+		} else {
+			sum += item.Amount
+		}
+		text.WriteString(fmt.Sprintf("`Create: %s`\n", logp.String()))
+
+	}
+	if sum > 0 {
+		text.WriteString(fmt.Sprintf("`Sum: %v`", sum))
+	}
+
+	err := SendServiceMessage(sender, b, text.String(), config.NotificationTimeout)
+	if err != nil {
+		logrus.Error(err)
+	}
 }
 
 // GetParsedData parse data from user input

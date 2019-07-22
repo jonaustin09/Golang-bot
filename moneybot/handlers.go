@@ -62,36 +62,18 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepos
 	} else {
 		var text string
 
-		if !(len(parsedData) > 0) {
+		if len(parsedData) == 0 {
 			text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
 			err := SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
-
-		} else {
-			for _, item := range parsedData {
-				if item.Category == "" {
-					item.Category, err = lr.FetchMostRelevantCategory(item.Name, int32(m.Sender.ID))
-					if err != nil {
-						logrus.Error(err)
-					}
-				}
-				logItem, err := lr.CreateRecord(item, int32(m.ID), int32(m.Sender.ID))
-				if err != nil {
-					logrus.Error(err)
-					return
-				}
-
-				text = fmt.Sprintf("`Saved: %s`", logItem)
-				err = SendServiceMessage(m.Sender, b, text, config.NotificationTimeout)
-				if err != nil {
-					logrus.Error(err)
-				}
-			}
+			return
 
 		}
+
+		SaveParsedData(parsedData, int32(m.ID), m.Sender, b, lr, config)
 	}
 }
 
@@ -116,46 +98,17 @@ func editLogs(messageID int32, sender *tb.User, b *tb.Bot, parsedData []ParsedDa
 	var text string
 	var err error
 
-	if !(len(parsedData) > 0) {
+	if len(parsedData) == 0 {
 		text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
 		err = SendServiceMessage(sender, b, text, config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 		}
+		return
 
-	} else {
-		text := "`Remove related items`"
-		err = SendServiceMessage(sender, b, text, config.NotificationTimeout)
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		err := lr.DeleteRecordsByMessageID(messageID)
-		if err != nil {
-			logrus.Error(err)
-		}
-
-		logrus.Info("Remove all related records")
-
-		for _, item := range parsedData {
-			if item.Category == "" {
-				item.Category, err = lr.FetchMostRelevantCategory(item.Name, int32(sender.ID))
-				if err != nil {
-					logrus.Error(err)
-				}
-			}
-			logItem, err := lr.CreateRecord(item, int32(messageID), int32(sender.ID))
-			if err != nil {
-				logrus.Error(err)
-			}
-
-			text = fmt.Sprintf("`Create: %s`", logItem.String())
-			err = SendServiceMessage(sender, b, text, config.NotificationTimeout)
-			if err != nil {
-				logrus.Error(err)
-			}
-		}
 	}
+
+	SaveParsedData(parsedData, messageID, sender, b, lr, config)
 }
 
 // HandleDelete allow to delete infromation from db for following message
