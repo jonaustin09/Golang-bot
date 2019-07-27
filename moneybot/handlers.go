@@ -108,6 +108,13 @@ func editLogs(messageID int32, sender *tb.User, b *tb.Bot, parsedData []ParsedDa
 
 	}
 
+	err = lr.DeleteRecordsByMessageID(messageID)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	logrus.Info("Remove all related records")
+
 	SaveParsedData(parsedData, messageID, sender, b, lr, config)
 }
 
