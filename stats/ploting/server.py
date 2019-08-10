@@ -26,6 +26,9 @@ class Stater(stats_grpc.StatsBase):
         fig.savefig(buf, format='png', bbox_inches="tight")
         buf.seek(0)
 
+        plt.cla()
+        fig.clear()
+
         await stream.send_message(stats_pb2.ImageMessage(res=buf.getvalue()))
 
     async def GetMonthStat(self, stream):
