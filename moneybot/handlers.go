@@ -39,10 +39,16 @@ func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
 // HandleNewMessage process new messages
 func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
+
+	err := b.Notify(m.Sender, tb.Typing)
+	if err != nil {
+		logrus.Error(err)
+	}
+
 	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
+	err = inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -81,10 +87,15 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepos
 func HandleEdit(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 
+	err := b.Notify(m.Sender, tb.Typing)
+	if err != nil {
+		logrus.Error(err)
+	}
+
 	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
+	err = inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -148,7 +159,11 @@ func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 // HandleStatsAllByMonth allow to get information grouped by monthes
 func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
-	var err error
+
+	err := b.Notify(m.Sender, tb.UploadingPhoto)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
 	if err != nil {
@@ -198,7 +213,10 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 // HandleStatsByCategory allow to get information grouped by categories
 func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
-	var err error
+	err := b.Notify(m.Sender, tb.UploadingPhoto)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
 	if err != nil {
@@ -258,7 +276,10 @@ func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 // HandleExport allow to export data into csv file
 func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
-	var err error
+	err := b.Notify(m.Sender, tb.UploadingDocument)
+	if err != nil {
+		logrus.Error(err)
+	}
 
 	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
 	if err != nil {

@@ -28,17 +28,21 @@ def post_generate(plt):
 def get_month_amount_stat(data):
     df = prepare_dataframe(data)
 
-    g = df.groupby(pd.Grouper(freq="M"))
+    g = df.groupby([pd.Grouper(freq="M"), df['category']])
 
     frame = g['amount'].sum().to_frame()
+    frame = frame.unstack()
+    frame = frame.fillna(0)
+
+    frame.loc[:,'total'] = frame.sum(axis=1)
 
     frame['timestamp'] = frame.index
     frame['month'] = frame['timestamp'].dt.strftime('%d/%m/%Y')
     frame.reset_index(drop=True, inplace=True)
     frame.drop(['timestamp'], axis=1)
-    frame['amount'] = frame['amount'].round(2)
+    frame = frame.round(2)
 
-    frame = frame[['month', 'amount']]
+    frame = frame[['month', 'total', 'amount']]
 
     size = (np.array(frame.shape[::-1]) + np.array([0, 1])) * np.array(
         [2.650, 0.625])
@@ -49,12 +53,12 @@ def get_month_amount_stat(data):
     mpl_table = ax.table(
         cellText=frame.values,
         bbox=[0, 0, 1, 1],
-        colLabels=frame.columns,
+        colLabels=[i[1] if i[1] != '' else i[0] for i in frame.columns.values],
         cellLoc='center',
     )
 
     mpl_table.auto_set_font_size(False)
-    mpl_table.set_fontsize(14)
+    mpl_table.set_fontsize(16)
 
     row_colors = ['#f1f1f2', 'w']
 
