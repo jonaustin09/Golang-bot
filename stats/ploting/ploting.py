@@ -1,7 +1,6 @@
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import six
 
 
 def prepare_dataframe(data) -> pd.DataFrame:
@@ -36,6 +35,8 @@ def get_month_amount_stat(data):
 
     frame.loc[:,'total'] = frame.sum(axis=1)
 
+    frame = frame.sort_values(by=['timestamp'], ascending=False)
+
     frame['timestamp'] = frame.index
     frame['month'] = frame['timestamp'].dt.strftime('%d/%m/%Y')
     frame.reset_index(drop=True, inplace=True)
@@ -62,7 +63,7 @@ def get_month_amount_stat(data):
 
     row_colors = ['#f1f1f2', 'w']
 
-    for k, cell in six.iteritems(mpl_table._cells):
+    for k, cell in mpl_table._cells.items():
         cell.set_edgecolor('w')
         if k[0] == 0 or k[1] < 0:
             cell.set_text_props(weight='bold', color='w')

@@ -3,6 +3,7 @@ https://t.me/your_money_helper_bot
 Commands:
 - `stat_all_by_month` - get statistic based aggerated by month🤓
 - `stat_by_category` - get statistic of your spending based on categories🤓
+- `stat_by_category_for_current_month` - get statistic of your spending based on categories for current month🤓
 - `export` - get your data into csv file 📄
 - `delete` - can delete selected message from log 🌚
 

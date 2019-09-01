@@ -97,29 +97,32 @@ func main() {
 	})
 
 	b.Handle("/stat_all_by_month", func(m *tb.Message) {
-		mb.HandleStatsAllByMonth(m, b, statsClient, logItemRepository)
+		mb.HandleStatsAllByMonth(m, b, statsClient, logItemRepository, config)
 	})
 
 	b.Handle("/stat_by_category", func(m *tb.Message) {
-		mb.HandleStatsByCategory(m, b, statsClient, logItemRepository)
+		mb.HandleStatsByCategory(m, b, statsClient, logItemRepository, config)
+	})
+	b.Handle("/stat_by_category_for_current_month", func(m *tb.Message) {
+		mb.HandleStatsByCategoryForCurrentMonth(m, b, statsClient, logItemRepository, config)
 	})
 
 	b.Handle("/export", func(m *tb.Message) {
-		mb.HandleExport(m, b, logItemRepository)
+		mb.HandleExport(m, b, logItemRepository, config)
 	})
 	b.Handle("/delete", func(m *tb.Message) {
 		mb.HandleDelete(m, b, logItemRepository, config)
 	})
 
 	b.Handle(tb.OnPhoto, func(m *tb.Message) {
-		_, err := b.Send(m.Sender, "Sorry i don't support images 😓")
+		err := mb.SendMessage(m.Sender, b, "Sorry i don't support images 😓", config.NotificationTimeout)
 		if err != nil {
 			log.Error(err)
 		}
 	})
 
 	b.Handle("/income", func(m *tb.Message) {
-		_, err := b.Send(m.Sender, "In development 💪")
+		err := mb.SendMessage(m.Sender, b, "In development 💪", config.NotificationTimeout)
 		if err != nil {
 			log.Error(err)
 		}

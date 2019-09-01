@@ -1,6 +1,8 @@
 package moneybot
 
 import (
+	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -25,24 +27,43 @@ func GetLocalTime(timestamp int32) time.Time {
 	return unixTime.In(t)
 }
 
-// DeleteSystemMessage tries to delete sent message
-func DeleteSystemMessage(m *tb.Message, b *tb.Bot, timeout time.Duration) {
+// DeleteMessage tries to delete sent message
+func DeleteMessage(m *tb.Message, b *tb.Bot, timeout time.Duration) {
 	time.Sleep(timeout)
 	err := b.Delete(m)
 	if err != nil {
 		logrus.Info(err)
 	}
-	logrus.Info("Remove service message ", m.ID)
+	logrus.Info("Remove message ", m.ID)
 }
 
-// SendServiceMessage tries to sent message
-func SendServiceMessage(to tb.Recipient, b *tb.Bot, text string, displayTimeout time.Duration) error {
-	serviceMessage, err := b.Send(to, text, tb.ModeMarkdown, tb.Silent)
+// SendMessage tries to sent message, will delete after timeout
+func SendMessage(to tb.Recipient, b *tb.Bot, d interface{}, displayTimeout time.Duration) error {
+	serviceMessage, err := b.Send(to, d, tb.ModeMarkdown, tb.Silent)
 	if err != nil {
 		return err
 	}
-	logrus.Infof("Send service message %v with text: %s", serviceMessage.ID, serviceMessage.Text)
-	go DeleteSystemMessage(serviceMessage, b, displayTimeout)
+	logrus.Infof("Send message %v", serviceMessage.ID, serviceMessage.Text)
+	go DeleteMessage(serviceMessage, b, displayTimeout)
 
 	return nil
+}
+func SendDocumentFromReader(to tb.Recipient, b *tb.Bot, fileName string, file []byte, config Config) error {
+	err := ioutil.WriteFile(fileName, file, 0644)
+	if err != nil {
+		return err
+	}
+	logrus.Info("Create file")
+
+	defer func() {
+		err := os.Remove(fileName)
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
+
+	document := &tb.Document{File: tb.FromDisk(fileName)}
+	err = SendMessage(to, b, document, config.NotificationTimeout)
+	return err
+
 }

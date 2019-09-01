@@ -76,7 +76,7 @@ func SaveParsedData(parsedData []ParsedData, messageID int32, sender *tb.User, b
 		text.WriteString(fmt.Sprintf("`Sum: %v`", sum))
 	}
 
-	err := SendServiceMessage(sender, b, text.String(), config.NotificationTimeout)
+	err := SendMessage(sender, b, text.String(), config.NotificationTimeout)
 	if err != nil {
 		logrus.Error(err)
 	}
