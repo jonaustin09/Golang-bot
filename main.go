@@ -100,9 +100,6 @@ func main() {
 		mb.HandleStatsAllByMonth(m, b, statsClient, logItemRepository, config)
 	})
 
-	b.Handle("/stat_by_category", func(m *tb.Message) {
-		mb.HandleStatsByCategory(m, b, statsClient, logItemRepository, config)
-	})
 	b.Handle("/stat_current_month", func(m *tb.Message) {
 		mb.HandleStatsByCategoryForCurrentMonth(m, b, statsClient, logItemRepository, config)
 	})

@@ -40,15 +40,12 @@ func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
 func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
 
-	err := b.Notify(m.Sender, tb.Typing)
-	if err != nil {
-		logrus.Error(err)
-	}
+	go Notify(m.Sender, b, tb.Typing)
 
 	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	err = inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
+	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -87,15 +84,12 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepos
 func HandleEdit(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 
-	err := b.Notify(m.Sender, tb.Typing)
-	if err != nil {
-		logrus.Error(err)
-	}
+	go Notify(m.Sender, b, tb.Typing)
 
 	parsedData := GetParsedData(m.Text)
 	logrus.Info("Parsed data", parsedData)
 
-	err = inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
+	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -166,10 +160,7 @@ func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 
-	err := b.Notify(m.Sender, tb.UploadingPhoto)
-	if err != nil {
-		logrus.Error(err)
-	}
+	go Notify(m.Sender, b, tb.UploadingPhoto)
 
 	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
 	if err != nil {
@@ -197,6 +188,25 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 		return
 	}
 
+	logrus.Info("Call GetCategoryStat")
+	categoryStat, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
+		LogItems: itemsForAnalyze,
+	})
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	categoryStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(categoryStat.Res))}
+	monthStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthStat.Res))}
+
+	err = SendAlbum(m.Sender, b, tb.Album{monthStatDocument, categoryStatDocument}, config)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	go Notify(m.Sender, b, tb.UploadingDocument)
+
 	logrus.Info("Call GetMonthAmountStat")
 	monthAmountStat, err := c.GetMonthAmountStat(context.Background(), &stats.LogItemQueryMessage{
 		LogItems: itemsForAnalyze,
@@ -206,74 +216,20 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 		return
 	}
 
-	var fileName string
-
-	fileName = fmt.Sprintf("%v-%v-stat.png", m.Sender.ID, Timestamp())
+	fileName := fmt.Sprintf("%v-%v-stat.png", m.Sender.ID, Timestamp())
 	err = SendDocumentFromReader(m.Sender, b, fileName, monthAmountStat.Res, config)
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	fileName = fmt.Sprintf("%v-%v-stat.png", m.Sender.ID, Timestamp())
-	err = SendDocumentFromReader(m.Sender, b, fileName, monthStat.Res, config)
-	if err != nil {
-		logrus.Error(err)
-	}
-
 	go DeleteMessage(m, b, config.NotificationTimeout)
 
-}
-
-// HandleStatsByCategory allow to get information grouped by categories
-func HandleStatsByCategory(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository, config Config) {
-	logrus.Infof("Start HandleStatsByCategory request with %s by %v", m.Text, m.Sender.ID)
-	err := b.Notify(m.Sender, tb.UploadingPhoto)
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	logrus.Infof("Fetch items count %v", len(items))
-
-	if len(items) == 0 {
-		err = SendMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
-		if err != nil {
-			logrus.Error(err)
-		}
-		return
-	}
-
-	logrus.Info("Call GetCategoryStat")
-	stat, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: PrepareForAnalyze(items),
-	})
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	photo := &tb.Photo{File: tb.FromReader(bytes.NewReader(stat.Res))}
-
-	err = SendMessage(m.Sender, b, photo, config.NotificationTimeout)
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	go DeleteMessage(m, b, config.NotificationTimeout)
 }
 
 // HandleStatsByCategoryForCurrentMonth allow to get information grouped by categories for current month
 func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository, config Config) {
 	logrus.Infof("Start HandleStatsByCategoryForCurrentMonth request with %s by %v", m.Text, m.Sender.ID)
-	err := b.Notify(m.Sender, tb.UploadingPhoto)
-	if err != nil {
-		logrus.Error(err)
-	}
+	go Notify(m.Sender, b, tb.UploadingPhoto)
 
 	items, err := lr.GetRecordsByTelegramIDCurrentMonth(int32(m.Sender.ID))
 	if err != nil {
@@ -313,10 +269,8 @@ func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.Stat
 // HandleExport allow to export data into csv file
 func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
-	err := b.Notify(m.Sender, tb.UploadingDocument)
-	if err != nil {
-		logrus.Error(err)
-	}
+
+	go Notify(m.Sender, b, tb.UploadingDocument)
 
 	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
 	if err != nil {

@@ -48,6 +48,8 @@ func SendMessage(to tb.Recipient, b *tb.Bot, d interface{}, displayTimeout time.
 
 	return nil
 }
+
+// SendDocumentFromReader sends bytes as file
 func SendDocumentFromReader(to tb.Recipient, b *tb.Bot, fileName string, file []byte, config Config) error {
 	err := ioutil.WriteFile(fileName, file, 0644)
 	if err != nil {
@@ -64,6 +66,28 @@ func SendDocumentFromReader(to tb.Recipient, b *tb.Bot, fileName string, file []
 
 	document := &tb.Document{File: tb.FromDisk(fileName)}
 	err = SendMessage(to, b, document, config.NotificationTimeout)
-	return err
 
+	return err
+}
+
+// SendAlbum sends album and remove message after timeout
+func SendAlbum(to tb.Recipient, b *tb.Bot, a tb.Album, config Config) error {
+	messages, err := b.SendAlbum(to, a)
+	if err != nil {
+		return err
+	}
+
+	for _, m := range messages {
+		go DeleteMessage(&m, b, config.NotificationTimeout)
+	}
+
+	return nil
+}
+
+// Notify notifies user that action is started
+func Notify(to tb.Recipient, b *tb.Bot, action tb.ChatAction) {
+	err := b.Notify(to, action)
+	if err != nil {
+		logrus.Error(err)
+	}
 }
