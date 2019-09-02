@@ -78,7 +78,8 @@ func SendAlbum(to tb.Recipient, b *tb.Bot, a tb.Album, config Config) error {
 	}
 
 	for _, m := range messages {
-		go DeleteMessage(&m, b, config.NotificationTimeout)
+		tmp := m
+		go DeleteMessage(&tmp, b, config.NotificationTimeout)
 	}
 
 	return nil
