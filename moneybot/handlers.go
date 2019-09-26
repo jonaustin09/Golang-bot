@@ -17,6 +17,7 @@ import (
 // HandleStart greeting, saves information about user
 func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
 	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
+	logrus.Infof("chat_id = %d", m.Chat.ID)
 	var text string
 
 	uid := int32(m.Sender.ID)
@@ -27,9 +28,10 @@ func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
 		return
 	}
 	text = "Hello there i'll help you with your finances! \n" +
-		"Use the following format: `item amount`. *For example*: tea 10 (repository name)"
+		"Use the following format: `item amount`. *For example*: tea 10 (repository name) \n" +
+		"To delete message start to replay what you want to delete and type button 'delete'"
 
-	err = SendMessage(m.Sender, b, text, config.NotificationTimeout)
+	err = SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -42,41 +44,48 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepos
 
 	go Notify(m.Sender, b, tb.Typing)
 
-	parsedData := GetParsedData(m.Text)
-	logrus.Info("Parsed data", parsedData)
-
 	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
 	if err != nil {
 		logrus.Error(err)
 	}
 
+	items := GetItem(m.Text)
+	logrus.Info("Parsed data", items)
+
+	if len(items) == 0 {
+		text := "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+		err = SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+		}
+		return
+
+	}
+
 	if m.ReplyTo != nil {
 		if !lr.RecordExists(int32(m.ReplyTo.ID)) {
 			text := "You can not edit this message"
-			err := SendMessage(m.Sender, b, text, config.NotificationTimeout)
+			err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 			if err != nil {
 				logrus.Error(err)
 				return
 			}
 		} else {
-			editLogs(int32(m.ReplyTo.ID), m.Sender, b, parsedData, lr, config)
+			logrus.Info("Start editing")
+
+			go DeleteMessage(m.ReplyTo, b, 0)
+			err = lr.DeleteRecordsByMessageID(int32(m.ReplyTo.ID))
+			if err != nil {
+				logrus.Error(err)
+			}
+
+			logrus.Info("Remove all related records")
+
+			SaveItems(items, int32(m.ID), m.Sender, b, lr, config)
 		}
 
 	} else {
-		var text string
-
-		if len(parsedData) == 0 {
-			text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
-			err := SendMessage(m.Sender, b, text, config.NotificationTimeout)
-			if err != nil {
-				logrus.Error(err)
-				return
-			}
-			return
-
-		}
-
-		SaveParsedData(parsedData, int32(m.ID), m.Sender, b, lr, config)
+		SaveItems(items, int32(m.ID), m.Sender, b, lr, config)
 	}
 }
 
@@ -86,26 +95,26 @@ func HandleEdit(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository,
 
 	go Notify(m.Sender, b, tb.Typing)
 
-	parsedData := GetParsedData(m.Text)
-	logrus.Info("Parsed data", parsedData)
+	item := GetItem(m.Text)
+	logrus.Info("Parsed data", item)
 
 	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	editLogs(int32(m.ID), m.Sender, b, parsedData, lr, config)
+	editLogs(int32(m.ID), m.Sender, b, item, lr, config)
 }
 
 // editLogs tries to edit log
-func editLogs(messageID int32, sender *tb.User, b *tb.Bot, parsedData []ParsedData, lr LogItemRepository, config Config) {
+func editLogs(messageID int32, sender *tb.User, b *tb.Bot, items []Item, lr LogItemRepository, config Config) {
 	logrus.Info("Start editing")
 	var text string
 	var err error
 
-	if len(parsedData) == 0 {
-		text = "Use the following format: `item amount`. *For example*: tea 10 (repository name)"
-		err = SendMessage(sender, b, text, config.NotificationTimeout)
+	if len(items) == 0 {
+		text = "Use the following format: `item amount`. *For example*: tea 10 (category name)"
+		err = SendDeletableMessage(sender, b, text, config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -120,7 +129,7 @@ func editLogs(messageID int32, sender *tb.User, b *tb.Bot, parsedData []ParsedDa
 
 	logrus.Info("Remove all related records")
 
-	SaveParsedData(parsedData, messageID, sender, b, lr, config)
+	SaveItems(items, messageID, sender, b, lr, config)
 }
 
 // HandleDelete allow to delete infromation from db for following message
@@ -128,7 +137,7 @@ func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 	logrus.Infof("Start handleDelete request with %s by %v", m.Text, m.Sender.ID)
 	if m.ReplyTo == nil {
 		text := "You should reply for a message which you want to delete ↩️"
-		err := SendMessage(m.Sender, b, text, config.NotificationTimeout)
+		err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -142,7 +151,7 @@ func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 		logrus.Info("Remove all related records")
 
 		text := "`Remove item`"
-		err = SendMessage(m.Sender, b, text, config.NotificationTimeout)
+		err = SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 			return
@@ -170,7 +179,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
-		err = SendMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
+		err = SendDeletableMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -240,7 +249,7 @@ func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.Stat
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
-		err = SendMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
+		err = SendDeletableMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -258,7 +267,7 @@ func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.Stat
 
 	photo := &tb.Photo{File: tb.FromReader(bytes.NewReader(stat.Res))}
 
-	err = SendMessage(m.Sender, b, photo, config.NotificationTimeout)
+	err = SendDeletableMessage(m.Sender, b, photo, config.NotificationTimeout)
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -280,7 +289,7 @@ func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 	logrus.Infof("Fetch items count %v", len(items))
 
 	if len(items) == 0 {
-		err = SendMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
+		err = SendDeletableMessage(m.Sender, b, "There are not any records yet 😒", config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -322,11 +331,33 @@ func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 
 	document := &tb.Document{File: tb.FromDisk(fileName)}
 
-	err = SendMessage(m.Sender, b, document, config.NotificationTimeout)
+	err = SendDeletableMessage(m.Sender, b, document, config.NotificationTimeout)
 	if err != nil {
 		logrus.Error(err)
 	}
 	logrus.Info("Send file to ", m.Sender.ID)
 
 	go DeleteMessage(m, b, config.NotificationTimeout)
+}
+
+func HandleMonobank(items <-chan Item, b *tb.Bot, lr LogItemRepository, config Config) {
+	recipient := User{
+		ID: config.MonobankChatId,
+	}
+	for item := range items {
+		if item.IsValid() {
+			text := fmt.Sprintf("%s %.2f %s", item.Name, item.Amount, item.Category)
+			message, err := SendMessage(recipient, b, text)
+
+			if err != nil {
+				logrus.Error(err)
+				continue
+			}
+
+			_, err = item.ProcessSaving(int32(message.ID), recipient.ID, b, lr, config)
+			if err != nil {
+				logrus.Error(err)
+			}
+		}
+	}
 }

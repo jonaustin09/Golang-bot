@@ -37,13 +37,22 @@ func DeleteMessage(m *tb.Message, b *tb.Bot, timeout time.Duration) {
 	logrus.Info("Remove message ", m.ID)
 }
 
-// SendMessage tries to sent message, will delete after timeout
-func SendMessage(to tb.Recipient, b *tb.Bot, d interface{}, displayTimeout time.Duration) error {
-	serviceMessage, err := b.Send(to, d, tb.ModeMarkdown, tb.Silent)
+// SendMessage tries to sent message
+func SendMessage(to tb.Recipient, b *tb.Bot, d interface{}) (*tb.Message, error) {
+	message, err := b.Send(to, d, tb.ModeMarkdown, tb.Silent)
+	if err != nil {
+		return nil, err
+	}
+	logrus.Infof("Send message %v", message.ID, message.Text)
+	return message, nil
+}
+
+// SendDeletableMessage tries to sent message, will delete after timeout
+func SendDeletableMessage(to tb.Recipient, b *tb.Bot, d interface{}, displayTimeout time.Duration) error {
+	serviceMessage, err := SendMessage(to, b, d)
 	if err != nil {
 		return err
 	}
-	logrus.Infof("Send message %v", serviceMessage.ID, serviceMessage.Text)
 	go DeleteMessage(serviceMessage, b, displayTimeout)
 
 	return nil
@@ -65,7 +74,7 @@ func SendDocumentFromReader(to tb.Recipient, b *tb.Bot, fileName string, file []
 	}()
 
 	document := &tb.Document{File: tb.FromDisk(fileName)}
-	err = SendMessage(to, b, document, config.NotificationTimeout)
+	err = SendDeletableMessage(to, b, document, config.NotificationTimeout)
 
 	return err
 }
