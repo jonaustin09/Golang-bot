@@ -106,6 +106,12 @@ func SetWebhook(token string, url string) error {
 
 func ListenWebhook(port int, monobankEvents chan Item) {
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		w.WriteHeader(200)
+
+		if req.Method == http.MethodGet {
+			return
+		}
+
 		body, err := ioutil.ReadAll(req.Body)
 		fmt.Println(string(body))
 		if err != nil {
@@ -135,9 +141,8 @@ func ListenWebhook(port int, monobankEvents chan Item) {
 		}
 
 		monobankEvents <- item
-
-		w.WriteHeader(200)
 	})
+
 	logrus.Info(fmt.Sprintf("listen webhook on: %d", port))
 	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	if err != nil {
