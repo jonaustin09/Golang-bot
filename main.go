@@ -127,13 +127,12 @@ func main() {
 
 	if config.MonobankIntegrationEnabled {
 		monobankEvents := make(chan mb.Item)
+		go mb.ListenWebhook(8000, monobankEvents)
+		go mb.HandleMonobank(monobankEvents, b, logItemRepository, config)
 
 		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookUrl)
 		if err != nil {
 			log.Error(err)
-		} else {
-			go mb.ListenWebhook(8000, monobankEvents)
-			go mb.HandleMonobank(monobankEvents, b, logItemRepository, config)
 		}
 	}
 
