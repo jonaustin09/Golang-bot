@@ -39,6 +39,9 @@ func main() {
 		loggerFile = os.Stdout
 	}
 
+	logger := log.StandardLogger()
+	logger.Out = loggerFile
+
 	b, err := tb.NewBot(tb.Settings{
 		Token:  config.TelegramToken,
 		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
@@ -61,8 +64,6 @@ func main() {
 	db.InstantSet("gorm:auto_preload", true)
 
 	if config.LogSQL {
-		logger := log.StandardLogger()
-		logger.Out = loggerFile
 		db.SetLogger(logger)
 		db.LogMode(true)
 	}
