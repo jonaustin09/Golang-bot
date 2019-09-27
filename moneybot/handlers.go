@@ -344,8 +344,16 @@ func HandleMonobank(items <-chan Item, b *tb.Bot, lr LogItemRepository, config C
 	recipient := User{
 		ID: config.MonobankChatId,
 	}
+	var err error
 	for item := range items {
 		if item.IsValid() {
+			if item.Category == "" {
+				item.Category, err = lr.FetchMostRelevantCategory(item.Name, recipient.ID)
+				if err != nil {
+					logrus.Error(err)
+				}
+			}
+
 			text := fmt.Sprintf("%s %.2f %s", item.Name, item.Amount, item.Category)
 			message, err := SendMessage(recipient, b, text)
 
