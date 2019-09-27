@@ -55,11 +55,11 @@ func (s statementItem) getCategory() string {
 		return "одяг"
 	}
 	if s.Mcc == 4121 {
-		return "таксі"
+		return "транспорт"
 	}
 	if s.Mcc == 0742 || s.Mcc == 5995 {
 		// actually this is тварини
-		return "тварини"
+		return ""
 	}
 	if s.Mcc == 2741 || s.Mcc == 5111 || s.Mcc == 5192 || s.Mcc == 5942 || s.Mcc == 5994 {
 		// actually this is книги
