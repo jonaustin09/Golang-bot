@@ -39,6 +39,9 @@ func main() {
 		loggerFile = os.Stdout
 	}
 
+	logger := log.StandardLogger()
+	logger.Out = loggerFile
+
 	b, err := tb.NewBot(tb.Settings{
 		Token:  config.TelegramToken,
 		Poller: &tb.LongPoller{Timeout: 30 * time.Second},
@@ -61,8 +64,6 @@ func main() {
 	db.InstantSet("gorm:auto_preload", true)
 
 	if config.LogSQL {
-		logger := log.StandardLogger()
-		logger.Out = loggerFile
 		db.SetLogger(logger)
 		db.LogMode(true)
 	}
@@ -107,23 +108,34 @@ func main() {
 	b.Handle("/export", func(m *tb.Message) {
 		mb.HandleExport(m, b, logItemRepository, config)
 	})
-	b.Handle("/delete", func(m *tb.Message) {
+	b.Handle("delete", func(m *tb.Message) {
 		mb.HandleDelete(m, b, logItemRepository, config)
 	})
 
 	b.Handle(tb.OnPhoto, func(m *tb.Message) {
-		err := mb.SendMessage(m.Sender, b, "Sorry i don't support images 😓", config.NotificationTimeout)
+		err := mb.SendDeletableMessage(m.Sender, b, "Sorry i don't support images 😓", config.NotificationTimeout)
 		if err != nil {
 			log.Error(err)
 		}
 	})
 
 	b.Handle("/income", func(m *tb.Message) {
-		err := mb.SendMessage(m.Sender, b, "In development 💪", config.NotificationTimeout)
+		err := mb.SendDeletableMessage(m.Sender, b, "In development 💪", config.NotificationTimeout)
 		if err != nil {
 			log.Error(err)
 		}
 	})
+
+	if config.MonobankIntegrationEnabled {
+		monobankEvents := make(chan mb.Item)
+		go mb.ListenWebhook(8000, monobankEvents)
+		go mb.HandleMonobank(monobankEvents, b, logItemRepository, config)
+
+		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookUrl)
+		if err != nil {
+			log.Error(err)
+		}
+	}
 
 	b.Start()
 }

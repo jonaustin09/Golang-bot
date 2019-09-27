@@ -12,8 +12,8 @@ import (
 
 // LogItemRepository represent the logItem repository contract
 type LogItemRepository interface {
-	CreateRecord(parsedData ParsedData, MessageID int32, senderID int32) (*LogItem, error)
-	UpdateRecord(logItem *LogItem, parsedData ParsedData, senderID int32) error
+	CreateRecord(parsedData Item, MessageID int32, senderID int32) (*LogItem, error)
+	UpdateRecord(logItem *LogItem, parsedData Item, senderID int32) error
 	GetRecordsByTelegramID(SenderID int32) ([]LogItem, error)
 	GetRecordsByTelegramIDCurrentMonth(SenderID int32) ([]LogItem, error)
 	DeleteRecordsByMessageID(MessageID int32) error
@@ -32,7 +32,7 @@ type GormLogItemRepository struct {
 }
 
 // CreateRecord create new record of logItem
-func (r GormLogItemRepository) CreateRecord(parsedData ParsedData, MessageID int32, senderID int32) (*LogItem, error) {
+func (r GormLogItemRepository) CreateRecord(item Item, MessageID int32, senderID int32) (*LogItem, error) {
 	uid, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
@@ -41,9 +41,9 @@ func (r GormLogItemRepository) CreateRecord(parsedData ParsedData, MessageID int
 	logItem := LogItem{}
 
 	logItem.ID = uid.String()
-	logItem.Name = parsedData.Name
-	logItem.Amount = parsedData.Amount
-	logItem.Category = parsedData.Category
+	logItem.Name = item.Name
+	logItem.Amount = item.Amount
+	logItem.Category = item.Category
 	logItem.MessageID = MessageID
 	logItem.CreatedAt = Timestamp()
 	logItem.TelegramUserID = senderID
@@ -57,14 +57,14 @@ func (r GormLogItemRepository) CreateRecord(parsedData ParsedData, MessageID int
 }
 
 // UpdateRecord update record of logItem
-func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, parsedData ParsedData, senderID int32) error {
+func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, item Item, senderID int32) error {
 	if logItem.ID == "" {
 		return errors.New("can update only created items")
 	}
 
-	logItem.Name = parsedData.Name
-	logItem.Amount = parsedData.Amount
-	logItem.Category = parsedData.Category
+	logItem.Name = item.Name
+	logItem.Amount = item.Amount
+	logItem.Category = item.Category
 
 	if err := r.db.Save(&logItem).Error; err != nil {
 		return err
