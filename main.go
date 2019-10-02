@@ -23,12 +23,12 @@ func main() {
 	var err error
 	var loggerFile io.Writer
 
-	p_config, err := mb.InitConfig()
+	_config, err := mb.InitConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	config := *p_config
+	config := *_config
 
 	if config.LogIntoFile {
 		loggerFile, err = os.Create("bot.log")
@@ -81,20 +81,18 @@ func main() {
 	}()
 	statsClient := stats.NewStatsClient(conn)
 
-	userRepository := mb.NewGormUserRepository(db)
-	inputLogRepository := mb.NewGormInputLogRepository(db)
 	logItemRepository := mb.NewGormLogItemRepository(db)
 
 	b.Handle("/start", func(m *tb.Message) {
-		mb.HandleStart(m, b, userRepository, config)
+		mb.HandleStart(m, b, config)
 	})
 
 	b.Handle(tb.OnText, func(m *tb.Message) {
-		mb.HandleNewMessage(m, b, inputLogRepository, logItemRepository, config)
+		mb.HandleNewMessage(m, b, logItemRepository, config)
 	})
 
 	b.Handle(tb.OnEdited, func(m *tb.Message) {
-		mb.HandleEdit(m, b, inputLogRepository, logItemRepository, config)
+		mb.HandleEdit(m, b, logItemRepository, config)
 	})
 
 	b.Handle("/stat_all_by_month", func(m *tb.Message) {
@@ -126,11 +124,11 @@ func main() {
 		}
 	})
 
-	if config.MonobankIntegrationEnabled {
-		monobankEvents := make(chan mb.Item)
-		go mb.ListenWebhook(8000, monobankEvents)
-		go mb.HandleMonobank(monobankEvents, b, logItemRepository, config)
+	integrationEvents := make(chan mb.Item)
+	go mb.HandleIntegration(integrationEvents, b, logItemRepository, config)
 
+	if config.MonobankIntegrationEnabled {
+		go mb.ListenWebhook(8000, integrationEvents)
 		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookUrl)
 		if err != nil {
 			log.Error(err)

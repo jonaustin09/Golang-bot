@@ -15,23 +15,20 @@ import (
 )
 
 // HandleStart greeting, saves information about user
-func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
+func HandleStart(m *tb.Message, b *tb.Bot, config Config) {
 	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
 	logrus.Infof("chat_id = %d", m.Chat.ID)
 	var text string
 
-	uid := int32(m.Sender.ID)
-
-	_, err := ur.FetchOrCreate(uid, m.Sender.FirstName, m.Sender.LastName, m.Sender.LanguageCode, m.Sender.Username)
-	if err != nil {
-		logrus.Error(err)
-		return
+	if int32(m.Sender.ID) != config.ChatId {
+		text = "You can't use this bot. You should deploy it."
+	} else {
+		text = "Hello there i'll help you with your finances! \n" +
+			"Use the following format: `item amount`. *For example*: tea 10 (repository name) \n" +
+			"To delete message start to replay what you want to delete and type button 'delete'"
 	}
-	text = "Hello there i'll help you with your finances! \n" +
-		"Use the following format: `item amount`. *For example*: tea 10 (repository name) \n" +
-		"To delete message start to replay what you want to delete and type button 'delete'"
 
-	err = SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
+	err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -39,22 +36,17 @@ func HandleStart(m *tb.Message, b *tb.Bot, ur UserRepository, config Config) {
 }
 
 // HandleNewMessage process new messages
-func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
+func HandleNewMessage(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
 
 	go Notify(m.Sender, b, tb.Typing)
-
-	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
-	if err != nil {
-		logrus.Error(err)
-	}
 
 	items := GetItem(m.Text)
 	logrus.Info("Parsed data", items)
 
 	if len(items) == 0 {
 		text := "Use the following format: `item amount`. *For example*: tea 10 (category name)"
-		err = SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
+		err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 		if err != nil {
 			logrus.Error(err)
 		}
@@ -74,7 +66,7 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepos
 			logrus.Info("Start editing")
 
 			go DeleteMessage(m.ReplyTo, b, 0)
-			err = lr.DeleteRecordsByMessageID(int32(m.ReplyTo.ID))
+			err := lr.DeleteRecordsByMessageID(int32(m.ReplyTo.ID))
 			if err != nil {
 				logrus.Error(err)
 			}
@@ -90,18 +82,13 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepos
 }
 
 // HandleEdit allow to edit infromation from db for following message
-func HandleEdit(m *tb.Message, b *tb.Bot, inputLogRepository InputLogRepository, lr LogItemRepository, config Config) {
+func HandleEdit(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
 
 	go Notify(m.Sender, b, tb.Typing)
 
 	item := GetItem(m.Text)
 	logrus.Info("Parsed data", item)
-
-	err := inputLogRepository.CreateRecord(m.Text, int32(m.Sender.ID))
-	if err != nil {
-		logrus.Error(err)
-	}
 
 	editLogs(int32(m.ID), m.Sender, b, item, lr, config)
 }
@@ -340,9 +327,9 @@ func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 	go DeleteMessage(m, b, config.NotificationTimeout)
 }
 
-func HandleMonobank(items <-chan Item, b *tb.Bot, lr LogItemRepository, config Config) {
+func HandleIntegration(items <-chan Item, b *tb.Bot, lr LogItemRepository, config Config) {
 	recipient := User{
-		ID: config.MonobankChatId,
+		ID: config.ChatId,
 	}
 	var err error
 	for item := range items {

@@ -2,7 +2,6 @@ package moneybot
 
 import (
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -20,7 +19,7 @@ type Config struct {
 	MonobankIntegrationEnabled bool
 	MonobankWebhookUrl         string
 	MonobankToken              string
-	MonobankChatId             int32
+	ChatId                     int32
 }
 
 // InitConfig init configurations from file and .env
@@ -52,6 +51,7 @@ func InitConfig() (*Config, error) {
 	config.LogIntoFile = v.GetBool("enable_file_log")
 	config.LogSQL = v.GetBool("enable_sql_log")
 	config.DbFile = v.GetString("db_file")
+	config.ChatId = v.GetInt32("CHAT_ID")
 	config.TelegramToken = os.Getenv("TELEGRAM_TOKEN")
 	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
 
@@ -59,12 +59,6 @@ func InitConfig() (*Config, error) {
 	if config.MonobankIntegrationEnabled {
 		config.MonobankWebhookUrl = os.Getenv("MONOBANK_WEBHOOK_URL")
 		config.MonobankToken = os.Getenv("MONOBANK_TOKEN")
-		chatId, err := strconv.Atoi(os.Getenv("MONOBANK_CHAT_ID"))
-		if err != nil {
-			return nil, err
-		}
-		config.MonobankChatId = int32(chatId)
-
 	}
 
 	return config, nil
