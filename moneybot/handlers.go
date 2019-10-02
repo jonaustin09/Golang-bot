@@ -17,16 +17,14 @@ import (
 // HandleStart greeting, saves information about user
 func HandleStart(m *tb.Message, b *tb.Bot, config Config) {
 	logrus.Infof("Start handleStart request with %s by %v", m.Text, m.Sender.ID)
-	logrus.Infof("chat_id = %d", m.Chat.ID)
-	var text string
 
-	if int32(m.Sender.ID) != config.ChatId {
-		text = "You can't use this bot. You should deploy it."
-	} else {
-		text = "Hello there i'll help you with your finances! \n" +
-			"Use the following format: `item amount`. *For example*: tea 10 (repository name) \n" +
-			"To delete message start to replay what you want to delete and type button 'delete'"
+	if isForbidden(m, b, config) {
+		return
 	}
+
+	text := "Hello there i'll help you with your finances! \n" +
+		"Use the following format: `item amount`. *For example*: tea 10 (repository name) \n" +
+		"To delete message start to replay what you want to delete and type button 'delete'"
 
 	err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 	if err != nil {
@@ -38,6 +36,9 @@ func HandleStart(m *tb.Message, b *tb.Bot, config Config) {
 // HandleNewMessage process new messages
 func HandleNewMessage(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleNewMessage request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, b, config) {
+		return
+	}
 
 	go Notify(m.Sender, b, tb.Typing)
 
@@ -84,6 +85,9 @@ func HandleNewMessage(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Con
 // HandleEdit allow to edit infromation from db for following message
 func HandleEdit(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, b, config) {
+		return
+	}
 
 	go Notify(m.Sender, b, tb.Typing)
 
@@ -122,6 +126,10 @@ func editLogs(messageID int32, sender *tb.User, b *tb.Bot, items []Item, lr LogI
 // HandleDelete allow to delete infromation from db for following message
 func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleDelete request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, b, config) {
+		return
+	}
+
 	if m.ReplyTo == nil {
 		text := "You should reply for a message which you want to delete ↩️"
 		err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
@@ -155,6 +163,9 @@ func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 // HandleStatsAllByMonth allow to get information grouped by monthes
 func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, b, config) {
+		return
+	}
 
 	go Notify(m.Sender, b, tb.UploadingPhoto)
 
@@ -225,6 +236,10 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 // HandleStatsByCategoryForCurrentMonth allow to get information grouped by categories for current month
 func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository, config Config) {
 	logrus.Infof("Start HandleStatsByCategoryForCurrentMonth request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, b, config) {
+		return
+	}
+
 	go Notify(m.Sender, b, tb.UploadingPhoto)
 
 	items, err := lr.GetRecordsByTelegramIDCurrentMonth(int32(m.Sender.ID))
@@ -265,6 +280,9 @@ func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.Stat
 // HandleExport allow to export data into csv file
 func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleEdit request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, b, config) {
+		return
+	}
 
 	go Notify(m.Sender, b, tb.UploadingDocument)
 

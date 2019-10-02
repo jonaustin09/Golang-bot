@@ -101,3 +101,17 @@ func Notify(to tb.Recipient, b *tb.Bot, action tb.ChatAction) {
 		logrus.Error(err)
 	}
 }
+
+func isForbidden(m *tb.Message, b *tb.Bot, config Config) bool {
+	if int32(m.Sender.ID) != config.ChatId {
+		logrus.Infof("chat_id = %d", m.Chat.ID)
+
+		text := "You can't use this bot. You should deploy it."
+		err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+		}
+		return true
+	}
+	return false
+}
