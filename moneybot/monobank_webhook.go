@@ -113,7 +113,9 @@ func ListenWebhook(port int, monobankEvents chan Item) {
 		}
 
 		body, err := ioutil.ReadAll(req.Body)
-		fmt.Println(string(body))
+
+		logrus.Infof("webhook data: %s", string(body))
+
 		if err != nil {
 			logrus.Error(err)
 			return
