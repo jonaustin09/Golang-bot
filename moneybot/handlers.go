@@ -345,9 +345,10 @@ func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 	go DeleteMessage(m, b, config.NotificationTimeout)
 }
 
+// HandleIntegration allows to add new integration for example bank
 func HandleIntegration(items <-chan Item, b *tb.Bot, lr LogItemRepository, config Config) {
 	recipient := User{
-		ID: config.ChatId,
+		ID: config.ChatID,
 	}
 	var err error
 	for item := range items {

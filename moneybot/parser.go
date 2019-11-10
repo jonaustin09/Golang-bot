@@ -31,16 +31,17 @@ type Item struct {
 	Category string
 }
 
-// IsValid validate parsed data
+// IsValid validates parsed data
 func (p Item) IsValid() bool {
 	return p.Name != "" && p.Amount > 0
 }
 
-// HasCategory get info if repository is set
+// HasCategory gets info if repository is set
 func (p *Item) HasCategory() bool {
 	return p.Category != ""
 }
 
+// ProcessSaving saves item to db
 func (p Item) ProcessSaving(messageID int32, sender int32, b *tb.Bot, lr LogItemRepository, config Config) (*LogItem, error) {
 	var err error
 	if p.Category == "" {
@@ -57,6 +58,7 @@ func (p Item) ProcessSaving(messageID int32, sender int32, b *tb.Bot, lr LogItem
 	return logp, nil
 }
 
+// SaveItems saves items into db and sends notification to telegram
 func SaveItems(items []Item, messageID int32, sender *tb.User, b *tb.Bot, lr LogItemRepository, config Config) {
 	var sum float64
 
@@ -82,7 +84,7 @@ func SaveItems(items []Item, messageID int32, sender *tb.User, b *tb.Bot, lr Log
 	}
 }
 
-// GetParsedData parse data from user input
+// GetItem parse data from user input
 func GetItem(s string) []Item {
 	var items []Item
 

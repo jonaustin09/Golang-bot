@@ -56,7 +56,7 @@ func (l *LogItem) String() string {
 	return fmt.Sprintf("%s %s %.2f %s", timeString, l.Name, l.Amount, l.getCategoryNameOrDefault())
 }
 
-// toCSV get csv data
+// toCSV gets csv data
 func (l *LogItem) toCSV() []string {
 	localTime := GetLocalTime(l.CreatedAt)
 	timeString := localTime.Format("02.01.2006")

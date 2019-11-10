@@ -129,7 +129,7 @@ func main() {
 
 	if config.MonobankIntegrationEnabled {
 		go mb.ListenWebhook(8000, integrationEvents)
-		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookUrl)
+		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookURL)
 		if err != nil {
 			log.Error(err)
 		}

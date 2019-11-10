@@ -3,17 +3,17 @@ package moneybot
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
+
+	"github.com/sirupsen/logrus"
 )
 
-const monobankApiUrl = "https://api.monobank.ua"
+const monobankAPIURL = "https://api.monobank.ua"
 
 type webhook struct {
-	WebHookUrl string `json:"webHookUrl"`
+	WebHookURL string `json:"webHookUrl"`
 }
 
 type statementItem struct {
@@ -84,9 +84,10 @@ type webhookEvent struct {
 	} `json:"data"`
 }
 
+// SetWebhook sets webhook for monobank
 func SetWebhook(token string, url string) error {
-	data, _ := json.Marshal(webhook{WebHookUrl: url})
-	r, _ := http.NewRequest("POST", fmt.Sprintf("%s/personal/webhook", monobankApiUrl), bytes.NewReader(data))
+	data, _ := json.Marshal(webhook{WebHookURL: url})
+	r, _ := http.NewRequest("POST", fmt.Sprintf("%s/personal/webhook", monobankAPIURL), bytes.NewReader(data))
 	r.Header.Set("X-Token", token)
 	r.Header.Set("Content-Type", "application/json")
 
@@ -99,11 +100,12 @@ func SetWebhook(token string, url string) error {
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
 		body, _ := ioutil.ReadAll(resp.Body)
-		return errors.New(fmt.Sprintf("Status code: %s, Resp: %s", resp.StatusCode, string(body)))
+		return fmt.Errorf("Status code: %d, Resp: %s", resp.StatusCode, string(body))
 	}
 	return nil
 }
 
+// ListenWebhook runs listener for webhook
 func ListenWebhook(port int, monobankEvents chan Item) {
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(200)

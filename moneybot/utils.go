@@ -39,7 +39,7 @@ func DeleteMessage(m *tb.Message, b *tb.Bot, timeout time.Duration) {
 
 // SendMessage tries to sent message
 func SendMessage(to tb.Recipient, b *tb.Bot, d interface{}) (*tb.Message, error) {
-	message, err := b.Send(to, d, tb.ModeMarkdown, tb.Silent)
+	message, err := b.Send(to, d, tb.Silent)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func Notify(to tb.Recipient, b *tb.Bot, action tb.ChatAction) {
 }
 
 func isForbidden(m *tb.Message, b *tb.Bot, config Config) bool {
-	if int32(m.Sender.ID) != config.ChatId {
+	if int32(m.Sender.ID) != config.ChatID {
 		logrus.Infof("chat_id = %d", m.Chat.ID)
 
 		text := "You can't use this bot. You should deploy it."
