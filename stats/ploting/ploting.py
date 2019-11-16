@@ -26,6 +26,14 @@ def post_generate(plt):
 
 def get_month_amount_stat(data):
     df = prepare_dataframe(data)
+    
+    totals = {
+        'total': df['amount'].sum(),
+        'month': 'total'
+    }
+    g = df.groupby([df['category']])
+    frame_sum_all = g['amount'].sum().to_dict()
+    totals.update(frame_sum_all)
 
     g = df.groupby([pd.Grouper(freq="M"), df['category']])
 
@@ -50,11 +58,20 @@ def get_month_amount_stat(data):
 
     _, ax = plt.subplots(figsize=size)
     ax.axis('off')
-
+    
+    col_names = [i[1] if i[1] != '' else i[0] for i in frame.columns.values]
+    
+    total_values = []
+    for key in col_names:
+        v = totals[key] 
+        if isinstance(v, float):
+            v = round(v, 2)
+        total_values.append(v)
+    
     mpl_table = ax.table(
-        cellText=frame.values,
+        cellText=[*frame.values, total_values],
         bbox=[0, 0, 1, 1],
-        colLabels=[i[1] if i[1] != '' else i[0] for i in frame.columns.values],
+        colLabels=col_names,
         cellLoc='center',
     )
 
