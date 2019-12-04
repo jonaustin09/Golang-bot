@@ -33,21 +33,21 @@ class Stater(stats_grpc.StatsBase):
 
     async def GetMonthStat(self, stream):
         request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
-        data = adapter.get_items_as_dict(request.LogItems)
+        data = adapter.get_items_as_dict(request.LogMessagesAggregated)
         plt = get_month_stat(data)
 
         await self.send_plot(plt, stream)
 
     async def GetMonthAmountStat(self, stream):
         request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
-        data = adapter.get_items_as_dict(request.LogItems)
+        data = adapter.get_items_as_dict(request.LogMessagesAggregated)
         plt = get_month_amount_stat(data)
 
         await self.send_plot(plt, stream)
 
     async def GetCategoryStat(self, stream):
         request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
-        data = adapter.get_items_as_dict(request.LogItems)
+        data = adapter.get_items_as_dict(request.LogMessagesAggregated)
         plt = get_category_stat(data)
 
         await self.send_plot(plt, stream)

@@ -45,12 +45,12 @@ func (p *Item) HasCategory() bool {
 func (p Item) ProcessSaving(messageID int32, sender int32, b *tb.Bot, lr LogItemRepository, config Config) (*LogItem, error) {
 	var err error
 	if p.Category == "" {
-		p.Category, err = lr.FetchMostRelevantCategory(p.Name, sender)
+		p.Category, err = lr.FetchMostRelevantCategory(p.Name)
 		if err != nil {
 			logrus.Error(err)
 		}
 	}
-	logp, err := lr.CreateRecord(p, messageID, sender)
+	logp, err := lr.CreateRecord(p, messageID)
 	if err != nil {
 		return nil, err
 	}

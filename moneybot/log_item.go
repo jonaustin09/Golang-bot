@@ -12,13 +12,14 @@ import (
 
 // LogItemRepository represent the logItem repository contract
 type LogItemRepository interface {
-	CreateRecord(parsedData Item, MessageID int32, senderID int32) (*LogItem, error)
-	UpdateRecord(logItem *LogItem, parsedData Item, senderID int32) error
-	GetRecordsByTelegramID(SenderID int32) ([]LogItem, error)
-	GetRecordsByTelegramIDCurrentMonth(SenderID int32) ([]LogItem, error)
+	CreateRecord(item Item, MessageID int32) (*LogItem, error)
+	UpdateRecord(logItem *LogItem, parsedData Item) error
+	GetRecords() ([]LogItem, error)
+	GetAggregatedRecordsCurrentMonth() ([]LogItem, error)
+	GetAggregatedRecords() ([]LogItem, error)
 	DeleteRecordsByMessageID(MessageID int32) error
 	RecordExists(MessageID int32) bool
-	FetchMostRelevantCategory(name string, telegramUserID int32) (string, error)
+	FetchMostRelevantCategory(name string) (string, error)
 }
 
 // NewGormLogItemRepository creates new repository
@@ -32,7 +33,7 @@ type GormLogItemRepository struct {
 }
 
 // CreateRecord create new record of logItem
-func (r GormLogItemRepository) CreateRecord(item Item, MessageID int32, senderID int32) (*LogItem, error) {
+func (r GormLogItemRepository) CreateRecord(item Item, MessageID int32) (*LogItem, error) {
 	uid, err := uuid.NewV4()
 	if err != nil {
 		return nil, err
@@ -46,7 +47,6 @@ func (r GormLogItemRepository) CreateRecord(item Item, MessageID int32, senderID
 	logItem.Category = item.Category
 	logItem.MessageID = MessageID
 	logItem.CreatedAt = Timestamp()
-	logItem.TelegramUserID = senderID
 
 	logrus.Info("Create record logItem ", logItem)
 	err = r.db.Create(&logItem).Error
@@ -57,7 +57,7 @@ func (r GormLogItemRepository) CreateRecord(item Item, MessageID int32, senderID
 }
 
 // UpdateRecord update record of logItem
-func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, item Item, senderID int32) error {
+func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, item Item) error {
 	if logItem.ID == "" {
 		return errors.New("can update only created items")
 	}
@@ -74,23 +74,58 @@ func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, item Item, senderI
 	return nil
 }
 
-// GetRecordsByTelegramID get message by message id
-func (r GormLogItemRepository) GetRecordsByTelegramID(SenderID int32) ([]LogItem, error) {
+// GetRecords get all records
+func (r GormLogItemRepository) GetRecords() ([]LogItem, error) {
 	var items []LogItem
-	if err := r.db.Where("telegram_user_id = ?", SenderID).Order("created_at").Find(&items).Error; err != nil {
+	if err := r.db.Order("created_at").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
 }
 
-// GetRecordsByTelegramIDCurrentMonth delete's message by message id
-func (r GormLogItemRepository) GetRecordsByTelegramIDCurrentMonth(SenderID int32) ([]LogItem, error) {
+// GetAggregatedRecordsCurrentMonth aggregated items for current month
+func (r GormLogItemRepository) GetAggregatedRecordsCurrentMonth() ([]LogItem, error) {
 	var items []LogItem
 
 	beginOfMonth := uint64(now.BeginningOfMonth().UnixNano() / int64(time.Second))
 
-	if err := r.db.Where("telegram_user_id = ? AND created_at >= ?", SenderID, beginOfMonth).Order("created_at").Find(&items).Error; err != nil {
-		return nil, err
+	err := r.db.Raw(`
+	SELECT SUM(amount) as amount,
+       category,
+       created_at
+	FROM (
+		SELECT amount,
+			strftime('%m-%Y', datetime(created_at, 'unixepoch')) as d,
+			category,
+			created_at
+		FROM log_items
+		WHERE created_at >= ?
+	)
+	GROUP BY d, category;`, beginOfMonth).Scan(&items).Error
+	if err != nil {
+		return items, err
+	}
+	return items, nil
+}
+
+// GetAggregatedRecordsCurrentMonth aggregated items for all time
+func (r GormLogItemRepository) GetAggregatedRecords() ([]LogItem, error) {
+	var items []LogItem
+
+	err := r.db.Raw(`
+	SELECT SUM(amount) as amount,
+       category,
+       created_at
+	FROM (
+		SELECT amount,
+			strftime('%m-%Y', datetime(created_at, 'unixepoch')) as d,
+			category,
+			created_at
+		FROM log_items
+	)
+	GROUP BY d, category;`).Scan(&items).Error
+	if err != nil {
+		return items, err
 	}
 	return items, nil
 }
@@ -106,7 +141,7 @@ func (r GormLogItemRepository) RecordExists(MessageID int32) bool {
 }
 
 // FetchMostRelevantCategory get most relevant category using count
-func (r GormLogItemRepository) FetchMostRelevantCategory(name string, telegramUserID int32) (string, error) {
+func (r GormLogItemRepository) FetchMostRelevantCategory(name string) (string, error) {
 	type Result struct {
 		Category string
 	}
@@ -117,10 +152,10 @@ func (r GormLogItemRepository) FetchMostRelevantCategory(name string, telegramUs
        log_items.category as category,
        COUNT(*) AS count
 	FROM log_items 
-	WHERE log_items.name = ? AND log_items.telegram_user_id = ?
+	WHERE log_items.name = ?
 	GROUP BY log_items.category
 	ORDER BY count DESC 
-	LIMIT 1;`, name, telegramUserID).Scan(&result).Error
+	LIMIT 1;`, name).Scan(&result).Error
 	if err != nil {
 		return "", err
 	}

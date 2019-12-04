@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='stats',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=_b('\n\x0bstats.proto\x12\x05stats\"\x1b\n\x0cImageMessage\x12\x0b\n\x03res\x18\x01 \x01(\x0c\"S\n\x0eLogItemMessage\x12\x11\n\tCreatedAt\x18\x01 \x01(\x03\x12\x0c\n\x04Name\x18\x02 \x01(\t\x12\x0e\n\x06\x41mount\x18\x03 \x01(\x02\x12\x10\n\x08\x43\x61tegory\x18\x04 \x01(\t\">\n\x13LogItemQueryMessage\x12\'\n\x08LogItems\x18\x01 \x03(\x0b\x32\x15.stats.LogItemMessage2\xd9\x01\n\x05Stats\x12\x41\n\x0cGetMonthStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12\x44\n\x0fGetCategoryStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12G\n\x12GetMonthAmountStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0bstats.proto\x12\x05stats\"\x1b\n\x0cImageMessage\x12\x0b\n\x03res\x18\x01 \x01(\x0c\"K\n\x14LogMessageAggregated\x12\x11\n\tCreatedAt\x18\x01 \x01(\x03\x12\x0e\n\x06\x41mount\x18\x02 \x01(\x02\x12\x10\n\x08\x43\x61tegory\x18\x03 \x01(\t\"Q\n\x13LogItemQueryMessage\x12:\n\x15LogMessagesAggregated\x18\x01 \x03(\x0b\x32\x1b.stats.LogMessageAggregated2\xd9\x01\n\x05Stats\x12\x41\n\x0cGetMonthStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12\x44\n\x0fGetCategoryStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x12G\n\x12GetMonthAmountStat\x12\x1a.stats.LogItemQueryMessage\x1a\x13.stats.ImageMessage\"\x00\x62\x06proto3')
 )
 
 
@@ -57,37 +57,30 @@ _IMAGEMESSAGE = _descriptor.Descriptor(
 )
 
 
-_LOGITEMMESSAGE = _descriptor.Descriptor(
-  name='LogItemMessage',
-  full_name='stats.LogItemMessage',
+_LOGMESSAGEAGGREGATED = _descriptor.Descriptor(
+  name='LogMessageAggregated',
+  full_name='stats.LogMessageAggregated',
   filename=None,
   file=DESCRIPTOR,
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='CreatedAt', full_name='stats.LogItemMessage.CreatedAt', index=0,
+      name='CreatedAt', full_name='stats.LogMessageAggregated.CreatedAt', index=0,
       number=1, type=3, cpp_type=2, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='Name', full_name='stats.LogItemMessage.Name', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='Amount', full_name='stats.LogItemMessage.Amount', index=2,
-      number=3, type=2, cpp_type=6, label=1,
+      name='Amount', full_name='stats.LogMessageAggregated.Amount', index=1,
+      number=2, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='Category', full_name='stats.LogItemMessage.Category', index=3,
-      number=4, type=9, cpp_type=9, label=1,
+      name='Category', full_name='stats.LogMessageAggregated.Category', index=2,
+      number=3, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -105,7 +98,7 @@ _LOGITEMMESSAGE = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=51,
-  serialized_end=134,
+  serialized_end=126,
 )
 
 
@@ -117,7 +110,7 @@ _LOGITEMQUERYMESSAGE = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='LogItems', full_name='stats.LogItemQueryMessage.LogItems', index=0,
+      name='LogMessagesAggregated', full_name='stats.LogItemQueryMessage.LogMessagesAggregated', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -135,35 +128,35 @@ _LOGITEMQUERYMESSAGE = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=136,
-  serialized_end=198,
+  serialized_start=128,
+  serialized_end=209,
 )
 
-_LOGITEMQUERYMESSAGE.fields_by_name['LogItems'].message_type = _LOGITEMMESSAGE
+_LOGITEMQUERYMESSAGE.fields_by_name['LogMessagesAggregated'].message_type = _LOGMESSAGEAGGREGATED
 DESCRIPTOR.message_types_by_name['ImageMessage'] = _IMAGEMESSAGE
-DESCRIPTOR.message_types_by_name['LogItemMessage'] = _LOGITEMMESSAGE
+DESCRIPTOR.message_types_by_name['LogMessageAggregated'] = _LOGMESSAGEAGGREGATED
 DESCRIPTOR.message_types_by_name['LogItemQueryMessage'] = _LOGITEMQUERYMESSAGE
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
-ImageMessage = _reflection.GeneratedProtocolMessageType('ImageMessage', (_message.Message,), dict(
-  DESCRIPTOR = _IMAGEMESSAGE,
-  __module__ = 'stats_pb2'
+ImageMessage = _reflection.GeneratedProtocolMessageType('ImageMessage', (_message.Message,), {
+  'DESCRIPTOR' : _IMAGEMESSAGE,
+  '__module__' : 'stats_pb2'
   # @@protoc_insertion_point(class_scope:stats.ImageMessage)
-  ))
+  })
 _sym_db.RegisterMessage(ImageMessage)
 
-LogItemMessage = _reflection.GeneratedProtocolMessageType('LogItemMessage', (_message.Message,), dict(
-  DESCRIPTOR = _LOGITEMMESSAGE,
-  __module__ = 'stats_pb2'
-  # @@protoc_insertion_point(class_scope:stats.LogItemMessage)
-  ))
-_sym_db.RegisterMessage(LogItemMessage)
+LogMessageAggregated = _reflection.GeneratedProtocolMessageType('LogMessageAggregated', (_message.Message,), {
+  'DESCRIPTOR' : _LOGMESSAGEAGGREGATED,
+  '__module__' : 'stats_pb2'
+  # @@protoc_insertion_point(class_scope:stats.LogMessageAggregated)
+  })
+_sym_db.RegisterMessage(LogMessageAggregated)
 
-LogItemQueryMessage = _reflection.GeneratedProtocolMessageType('LogItemQueryMessage', (_message.Message,), dict(
-  DESCRIPTOR = _LOGITEMQUERYMESSAGE,
-  __module__ = 'stats_pb2'
+LogItemQueryMessage = _reflection.GeneratedProtocolMessageType('LogItemQueryMessage', (_message.Message,), {
+  'DESCRIPTOR' : _LOGITEMQUERYMESSAGE,
+  '__module__' : 'stats_pb2'
   # @@protoc_insertion_point(class_scope:stats.LogItemQueryMessage)
-  ))
+  })
 _sym_db.RegisterMessage(LogItemQueryMessage)
 
 
@@ -174,8 +167,8 @@ _STATS = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   serialized_options=None,
-  serialized_start=201,
-  serialized_end=418,
+  serialized_start=212,
+  serialized_end=429,
   methods=[
   _descriptor.MethodDescriptor(
     name='GetMonthStat',

@@ -160,7 +160,7 @@ func HandleDelete(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 	}
 }
 
-// HandleStatsAllByMonth allow to get information grouped by monthes
+// HandleStatsAllByMonth allow to get information grouped by months
 func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr LogItemRepository, config Config) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	if isForbidden(m, b, config) {
@@ -169,7 +169,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 
 	go Notify(m.Sender, b, tb.UploadingPhoto)
 
-	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
+	items, err := lr.GetAggregatedRecords()
 	if err != nil {
 		logrus.Error(err)
 	}
@@ -188,7 +188,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 
 	logrus.Info("Call GetMonthStat")
 	monthStat, err := c.GetMonthStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: itemsForAnalyze,
+		LogMessagesAggregated: itemsForAnalyze,
 	})
 	if err != nil {
 		logrus.Error(err)
@@ -197,7 +197,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 
 	logrus.Info("Call GetCategoryStat")
 	categoryStat, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: itemsForAnalyze,
+		LogMessagesAggregated: itemsForAnalyze,
 	})
 	if err != nil {
 		logrus.Error(err)
@@ -216,7 +216,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 
 	logrus.Info("Call GetMonthAmountStat")
 	monthAmountStat, err := c.GetMonthAmountStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: itemsForAnalyze,
+		LogMessagesAggregated: itemsForAnalyze,
 	})
 	if err != nil {
 		logrus.Error(err)
@@ -242,7 +242,7 @@ func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.Stat
 
 	go Notify(m.Sender, b, tb.UploadingPhoto)
 
-	items, err := lr.GetRecordsByTelegramIDCurrentMonth(int32(m.Sender.ID))
+	items, err := lr.GetAggregatedRecordsCurrentMonth()
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -260,7 +260,7 @@ func HandleStatsByCategoryForCurrentMonth(m *tb.Message, b *tb.Bot, c stats.Stat
 
 	logrus.Info("Call GetCategoryStat")
 	stat, err := c.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogItems: PrepareForAnalyze(items),
+		LogMessagesAggregated: PrepareForAnalyze(items),
 	})
 	if err != nil {
 		logrus.Error(err)
@@ -286,7 +286,7 @@ func HandleExport(m *tb.Message, b *tb.Bot, lr LogItemRepository, config Config)
 
 	go Notify(m.Sender, b, tb.UploadingDocument)
 
-	items, err := lr.GetRecordsByTelegramID(int32(m.Sender.ID))
+	items, err := lr.GetRecords()
 	if err != nil {
 		logrus.Error(err)
 		return
@@ -354,7 +354,7 @@ func HandleIntegration(items <-chan Item, b *tb.Bot, lr LogItemRepository, confi
 	for item := range items {
 		if item.IsValid() {
 			if item.Category == "" {
-				item.Category, err = lr.FetchMostRelevantCategory(item.Name, recipient.ID)
+				item.Category, err = lr.FetchMostRelevantCategory(item.Name)
 				if err != nil {
 					logrus.Error(err)
 				}

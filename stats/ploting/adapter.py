@@ -6,14 +6,12 @@ from stats_pb2 import LogItemQueryMessage
 @dataclass
 class LogItem:
     timestamp: int
-    name: str
     amount: float
     category: str
 
     def as_dict(self):
         return {
             'timestamp': self.timestamp,
-            'name': self.name,
             'amount': self.amount,
             'category': self.category,
         }
@@ -23,7 +21,7 @@ class LogItemAdapter:
     @staticmethod
     def get_items_as_dict(log_item_query_message: LogItemQueryMessage):
         res = []
-        for i in (LogItem(timestamp=l.CreatedAt, name=l.Name, amount=l.Amount,
+        for i in (LogItem(timestamp=l.CreatedAt, amount=l.Amount,
                           category=l.Category) for l in log_item_query_message):
             res.append(i.as_dict())
 

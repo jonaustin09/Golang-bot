@@ -2,19 +2,13 @@ package moneybot
 
 import (
 	"fmt"
-	"strconv"
-
 	"github.com/dobrovolsky/money_bot/stats"
+	"strconv"
 )
 
-// User stores telegram user's data in db
+// User struct for passing to bot
 type User struct {
-	ID           int32
-	FirstName    string
-	LastName     string
-	Username     string
-	LanguageCode string
-	CreatedAt    int32
+	ID int32
 }
 
 // Recipient to implement interface Recipient that allow to send message to
@@ -22,23 +16,14 @@ func (user User) Recipient() string {
 	return strconv.Itoa(int(user.ID))
 }
 
-// InputLog store input data for future analyze
-type InputLog struct {
-	ID             string
-	Text           string
-	TelegramUserID int32
-	CreatedAt      int32
-}
-
 // LogItem store information about log
 type LogItem struct {
-	ID             string
-	CreatedAt      int32
-	Name           string
-	Amount         float64
-	MessageID      int32
-	TelegramUserID int32
-	Category       string
+	ID        string
+	CreatedAt int32
+	Name      string
+	Amount    float64
+	MessageID int32
+	Category  string
 }
 
 func (l *LogItem) getCategoryNameOrDefault() string {
@@ -70,12 +55,11 @@ func (l *LogItem) toCSV() []string {
 }
 
 // PrepareForAnalyze creates message for gRPC
-func PrepareForAnalyze(items []LogItem) []*stats.LogItemMessage {
-	itemsForAnalyze := make([]*stats.LogItemMessage, 0, len(items))
+func PrepareForAnalyze(items []LogItem) []*stats.LogMessageAggregated {
+	itemsForAnalyze := make([]*stats.LogMessageAggregated, 0, len(items))
 	for _, item := range items {
-		itemsForAnalyze = append(itemsForAnalyze, &stats.LogItemMessage{
+		itemsForAnalyze = append(itemsForAnalyze, &stats.LogMessageAggregated{
 			CreatedAt: int64(item.CreatedAt),
-			Name:      item.Name,
 			Amount:    float32(item.Amount),
 			Category:  item.getCategoryNameOrDefault(),
 		})

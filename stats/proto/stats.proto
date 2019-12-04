@@ -15,13 +15,12 @@ message ImageMessage {
     bytes res = 1;
 }
 
-message LogItemMessage {
+message LogMessageAggregated {
     int64 CreatedAt = 1;
-    string Name = 2;
-    float Amount = 3;
-    string Category = 4;
+    float Amount = 2;
+    string Category = 3;
 }
 
 message LogItemQueryMessage {
-    repeated LogItemMessage LogItems = 1;
+    repeated LogMessageAggregated LogMessagesAggregated = 1;
 }
