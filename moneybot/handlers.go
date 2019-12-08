@@ -167,7 +167,7 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 		return
 	}
 
-	go Notify(m.Sender, b, tb.UploadingPhoto)
+	go Notify(m.Sender, b, tb.UploadingDocument)
 
 	items, err := lr.GetAggregatedRecords()
 	if err != nil {
@@ -185,6 +185,23 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 	}
 
 	itemsForAnalyze := PrepareForAnalyze(items)
+
+	logrus.Info("Call GetMonthAmountStat")
+	monthAmountStat, err := c.GetMonthAmountStat(context.Background(), &stats.LogItemQueryMessage{
+		LogMessagesAggregated: itemsForAnalyze,
+	})
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	fileName := fmt.Sprintf("%v-%v-stat.png", m.Sender.ID, Timestamp())
+	err = SendDocumentFromReader(m.Sender, b, fileName, monthAmountStat.Res, config)
+	if err != nil {
+		logrus.Error(err)
+	}
+
+	go Notify(m.Sender, b, tb.UploadingPhoto)
 
 	logrus.Info("Call GetMonthStat")
 	monthStat, err := c.GetMonthStat(context.Background(), &stats.LogItemQueryMessage{
@@ -208,23 +225,6 @@ func HandleStatsAllByMonth(m *tb.Message, b *tb.Bot, c stats.StatsClient, lr Log
 	monthStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthStat.Res))}
 
 	err = SendAlbum(m.Sender, b, tb.Album{monthStatDocument, categoryStatDocument}, config)
-	if err != nil {
-		logrus.Error(err)
-	}
-
-	go Notify(m.Sender, b, tb.UploadingDocument)
-
-	logrus.Info("Call GetMonthAmountStat")
-	monthAmountStat, err := c.GetMonthAmountStat(context.Background(), &stats.LogItemQueryMessage{
-		LogMessagesAggregated: itemsForAnalyze,
-	})
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	fileName := fmt.Sprintf("%v-%v-stat.png", m.Sender.ID, Timestamp())
-	err = SendDocumentFromReader(m.Sender, b, fileName, monthAmountStat.Res, config)
 	if err != nil {
 		logrus.Error(err)
 	}
