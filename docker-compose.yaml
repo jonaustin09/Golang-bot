@@ -10,6 +10,8 @@ services:
     - .:/go/src/github.com/dobrovolsky/moneybot/
     - cache:/go
     working_dir: /go/src/github.com/dobrovolsky/moneybot/
+    ports: 
+      - 8000:8000
     depends_on:
       - stats
 
@@ -20,6 +22,16 @@ services:
     command: bash -c "poetry run python ploting/server.py"
     volumes:
     - ./stats:/code
+
+  jupyterlab:
+    build:
+      context: stats
+      dockerfile: Dockerfile
+    command: bash -c "poetry run jupyter lab --ip=0.0.0.0 --port=8888 --allow-root"
+    ports: 
+      - 8888:8888
+    volumes:
+    - .:/moneybot
 
 volumes:
   cache:

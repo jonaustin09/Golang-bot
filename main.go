@@ -128,8 +128,8 @@ func main() {
 	go mb.HandleIntegration(integrationEvents, b, logItemRepository, config)
 
 	if config.MonobankIntegrationEnabled {
-		go mb.ListenWebhook(8000, integrationEvents)
-		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookURL)
+		go mb.ListenWebhook(config.MonobankPort, integrationEvents)
+		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookURL, config.MonobankPort)
 		if err != nil {
 			log.Error(err)
 		}

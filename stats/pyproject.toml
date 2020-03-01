@@ -11,9 +11,9 @@ pandas = "^0.24.1"
 matplotlib = "^3.0"
 numpy = "^1.16"
 grpclib = "^0.2.4"
+jupyterlab = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
-jupyterlab = "^1.0"
 
 [build-system]
 requires = ["poetry>=0.12"]

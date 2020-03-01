@@ -85,7 +85,7 @@ type webhookEvent struct {
 }
 
 // SetWebhook sets webhook for monobank
-func SetWebhook(token string, url string) error {
+func SetWebhook(token string, url string, port int) error {
 	data, _ := json.Marshal(webhook{WebHookURL: url})
 	r, _ := http.NewRequest("POST", fmt.Sprintf("%s/personal/webhook", monobankAPIURL), bytes.NewReader(data))
 	r.Header.Set("X-Token", token)

@@ -19,6 +19,7 @@ type Config struct {
 	MonobankIntegrationEnabled bool
 	MonobankWebhookURL         string
 	MonobankToken              string
+	MonobankPort               int
 	ChatID                     int32
 }
 
@@ -59,6 +60,7 @@ func InitConfig() (*Config, error) {
 	if config.MonobankIntegrationEnabled {
 		config.MonobankWebhookURL = os.Getenv("MONOBANK_WEBHOOK_URL")
 		config.MonobankToken = os.Getenv("MONOBANK_TOKEN")
+		config.MonobankPort = v.GetInt("MONOBANK_PORT")
 	}
 
 	return config, nil
