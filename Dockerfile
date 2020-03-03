@@ -1,4 +1,4 @@
-FROM golang:1.12
+FROM golang:1.14
 
 # Install protoc, apply migrations, populate default env file
 RUN curl -s -L https://github.com/protocolbuffers/protobuf/releases/download/v3.7.0/protoc-3.7.0-linux-x86_64.zip > protoc-3.7.0-linux-x86_64.zip &&\
