@@ -77,7 +77,7 @@ func (r GormLogItemRepository) UpdateRecord(logItem *LogItem, item Item) error {
 // GetRecords get all records
 func (r GormLogItemRepository) GetRecords() ([]LogItem, error) {
 	var items []LogItem
-	if err := r.db.Order("created_at").Find(&items).Error; err != nil {
+	if err := r.db.Order("created_at desc").Find(&items).Error; err != nil {
 		return nil, err
 	}
 	return items, nil
