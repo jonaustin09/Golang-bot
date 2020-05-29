@@ -38,7 +38,7 @@ func InitConfig() (*Config, error) {
 	v.SetDefault("notification_timeout", 10)
 	v.SetDefault("monobank_integration", false)
 
-	v.SetConfigName("Config")
+	v.SetConfigName("config")
 	v.AddConfigPath(".")
 	v.AutomaticEnv()
 
