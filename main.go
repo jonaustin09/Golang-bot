@@ -79,61 +79,13 @@ func main() {
 			log.Error(err)
 		}
 	}()
-	statsClient := stats.NewStatsClient(conn)
 
-	logItemRepository := mb.NewGormLogItemRepository(db)
+	app := mb.Application{
+		Bot:               b,
+		Config:            config,
+		LogItemRepository: mb.NewGormLogItemRepository(db),
+		StatsClient:       stats.NewStatsClient(conn),
+		IntegrationEvents: make(chan mb.Item)}
 
-	b.Handle("/start", func(m *tb.Message) {
-		mb.HandleStart(m, b, config)
-	})
-
-	b.Handle(tb.OnText, func(m *tb.Message) {
-		mb.HandleNewMessage(m, b, logItemRepository, config)
-	})
-
-	b.Handle(tb.OnEdited, func(m *tb.Message) {
-		mb.HandleEdit(m, b, logItemRepository, config)
-	})
-
-	b.Handle("/stat_all_by_month", func(m *tb.Message) {
-		mb.HandleStatsAllByMonth(m, b, statsClient, logItemRepository, config)
-	})
-
-	b.Handle("/stat_current_month", func(m *tb.Message) {
-		mb.HandleStatsByCategoryForCurrentMonth(m, b, statsClient, logItemRepository, config)
-	})
-
-	b.Handle("/export", func(m *tb.Message) {
-		mb.HandleExport(m, b, logItemRepository, config)
-	})
-	b.Handle("delete", func(m *tb.Message) {
-		mb.HandleDelete(m, b, logItemRepository, config)
-	})
-
-	b.Handle(tb.OnPhoto, func(m *tb.Message) {
-		err := mb.SendDeletableMessage(m.Sender, b, "Sorry i don't support images 😓", config.NotificationTimeout)
-		if err != nil {
-			log.Error(err)
-		}
-	})
-
-	b.Handle("/income", func(m *tb.Message) {
-		err := mb.SendDeletableMessage(m.Sender, b, "In development 💪", config.NotificationTimeout)
-		if err != nil {
-			log.Error(err)
-		}
-	})
-
-	integrationEvents := make(chan mb.Item)
-	go mb.HandleIntegration(integrationEvents, b, logItemRepository, config)
-
-	if config.MonobankIntegrationEnabled {
-		go mb.ListenWebhook(config.MonobankPort, integrationEvents)
-		err := mb.SetWebhook(config.MonobankToken, config.MonobankWebhookURL, config.MonobankPort)
-		if err != nil {
-			log.Error(err)
-		}
-	}
-
-	b.Start()
+	app.Start()
 }
