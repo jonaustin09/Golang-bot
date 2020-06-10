@@ -89,22 +89,25 @@ def get_month_amount_stat(data):
             cell.set_facecolor(row_colors[k[0] % len(row_colors)])
     return ax
 
-
-def get_month_stat(data):
+def get_category_stat(data):
     df = prepare_dataframe(data)
 
-    g = df.groupby(pd.Grouper(freq="M"))
+    g = df.groupby(by='category')
+    sm = g.sum().sort_values(by='amount', ascending=True)
 
-    total = round(df['amount'].sum(), 2)
+    total = round(sm['amount'].sum(), 2)
 
-    plt = g.sum().plot(figsize=(15, 8), color='#86bf91', fontsize=12,
-                       title=f'Total: {total}', grid=True, legend=False,
-                       kind='line')
+    plt = sm.plot(figsize=(8, 10), color='#86bf91', fontsize=12, zorder=2,
+                  width=0.85, title=f'Total: {total}', kind='barh',
+                  legend=False, )
 
-    plt.set_ylabel("Amount", labelpad=20, weight='bold', size=12)
-    plt.set_xlabel("Month", labelpad=20, weight='bold', size=12)
+    plt.set_ylabel("Category", labelpad=20, weight='bold', size=12)
+    plt.set_xlabel("Amount", labelpad=20, weight='bold', size=12)
 
-    plt.tick_params(axis="both", which="both", bottom=False, top=False,
-                    labelbottom=True, left=False, right=False, labelleft=True)
+    for y, x in enumerate(sm['amount']):
+        percentage = round(x * 100 / total, 2)
+        plt.annotate(
+            f'{round(x, 2)} / {percentage}%', xy=(x, y), va='center',
+        )
 
     return post_generate(plt)
