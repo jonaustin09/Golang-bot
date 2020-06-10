@@ -16,7 +16,8 @@ type LogItemRepository interface {
 	UpdateRecord(logItem *LogItem, parsedData Item) error
 	GetRecords() ([]LogItem, error)
 	GetAggregatedRecordsCurrentMonth() ([]LogItem, error)
-	GetAggregatedRecords() ([]LogItem, error)
+	GetAggregatedRecordsAllTime() ([]LogItem, error)
+	GetAggregatedRecordsPeriod(timestampFrom int64, timestampTo int64) ([]LogItem, error)
 	DeleteRecordsByMessageID(MessageID int32) error
 	RecordExists(MessageID int32) bool
 	FetchMostRelevantCategory(name string) (string, error)
@@ -108,8 +109,8 @@ func (r GormLogItemRepository) GetAggregatedRecordsCurrentMonth() ([]LogItem, er
 	return items, nil
 }
 
-// GetAggregatedRecordsCurrentMonth aggregated items for all time
-func (r GormLogItemRepository) GetAggregatedRecords() ([]LogItem, error) {
+// GetAggregatedRecordsAllTime aggregated items for all time
+func (r GormLogItemRepository) GetAggregatedRecordsAllTime() ([]LogItem, error) {
 	var items []LogItem
 
 	err := r.db.Raw(`
@@ -124,6 +125,29 @@ func (r GormLogItemRepository) GetAggregatedRecords() ([]LogItem, error) {
 		FROM log_items
 	)
 	GROUP BY d, category;`).Scan(&items).Error
+	if err != nil {
+		return items, err
+	}
+	return items, nil
+}
+
+// GetAggregatedRecordsPeriod aggregated items for all time
+func (r GormLogItemRepository) GetAggregatedRecordsPeriod(timestampFrom int64, timestampTo int64) ([]LogItem, error) {
+	var items []LogItem
+
+	err := r.db.Raw(`
+	SELECT SUM(amount) as amount,
+       category,
+       created_at
+	FROM (
+		SELECT amount,
+			strftime('%m-%Y', datetime(created_at, 'unixepoch')) as d,
+			category,
+			created_at
+		FROM log_items
+        WHERE created_at >= ? AND created_at <= ?
+	)
+	GROUP BY d, category;`, timestampFrom, timestampTo).Scan(&items).Error
 	if err != nil {
 		return items, err
 	}

@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package stats;
 
+option go_package = "./stats";
+
 service Stats {
-    rpc GetMonthStat (LogItemQueryMessage) returns (ImageMessage) {
+    rpc GetStatGroupByCategory (LogItemQueryMessage) returns (ImageMessage) {
     }
-    rpc GetCategoryStat (LogItemQueryMessage) returns (ImageMessage) {
-    }
-    rpc GetMonthAmountStat (LogItemQueryMessage) returns (ImageMessage) {
+    rpc GetStatAsTable (LogItemQueryMessage) returns (ImageMessage) {
     }
 }
 

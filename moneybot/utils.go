@@ -12,8 +12,7 @@ import (
 
 // Timestamp returns unix now time
 func Timestamp() int32 {
-	res := time.Now().UnixNano() / int64(time.Second)
-	return int32(res)
+	return int32(time.Now().Unix())
 }
 
 // GetLocalTime utc time to Europe/Kiev
@@ -77,21 +76,6 @@ func SendDocumentFromReader(to tb.Recipient, b *tb.Bot, fileName string, file []
 	err = SendDeletableMessage(to, b, document, config.NotificationTimeout)
 
 	return err
-}
-
-// SendAlbum sends album and remove message after timeout
-func SendAlbum(to tb.Recipient, b *tb.Bot, a tb.Album, config Config) error {
-	messages, err := b.SendAlbum(to, a)
-	if err != nil {
-		return err
-	}
-
-	for _, m := range messages {
-		tmp := m
-		go DeleteMessage(&tmp, b, config.NotificationTimeout)
-	}
-
-	return nil
 }
 
 // Notify notifies user that action is started

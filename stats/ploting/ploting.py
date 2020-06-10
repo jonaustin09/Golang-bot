@@ -108,27 +108,3 @@ def get_month_stat(data):
                     labelbottom=True, left=False, right=False, labelleft=True)
 
     return post_generate(plt)
-
-
-def get_category_stat(data):
-    df = prepare_dataframe(data)
-
-    g = df.groupby(by='category')
-    sm = g.sum().sort_values(by='amount', ascending=True)
-
-    total = round(sm['amount'].sum(), 2)
-
-    plt = sm.plot(figsize=(8, 10), color='#86bf91', fontsize=12, zorder=2,
-                  width=0.85, title=f'Total: {total}', kind='barh',
-                  legend=False, )
-
-    plt.set_ylabel("Category", labelpad=20, weight='bold', size=12)
-    plt.set_xlabel("Amount", labelpad=20, weight='bold', size=12)
-
-    for y, x in enumerate(sm['amount']):
-        percentage = round(x * 100 / total, 2)
-        plt.annotate(
-            f'{round(x, 2)} / {percentage}%', xy=(x, y), va='center',
-        )
-
-    return post_generate(plt)

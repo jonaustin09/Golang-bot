@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/dobrovolsky/money_bot/stats"
 
@@ -29,11 +30,14 @@ func (a Application) setUpHandlers() {
 
 	a.Bot.Handle(tb.OnEdited, a.handleEdit)
 
-	a.Bot.Handle("/stat_all_by_month", a.handleStatsAllByMonth)
+	a.Bot.Handle("/stat_all_time", a.handleStatAsTableForAllTime)
 
-	a.Bot.Handle("/stat_current_month", a.handleStatsByCategoryForCurrentMonth)
+	a.Bot.Handle("/stat_last_year", a.handleStatAsTableForPeriod)
+
+	a.Bot.Handle("/stat_current_month", a.handleStatsGroupByCategoryForCurrentMonth)
 
 	a.Bot.Handle("/export", a.handleExport)
+
 	a.Bot.Handle("delete", a.handleDelete)
 
 	go a.handleIntegration(a.IntegrationEvents)
@@ -205,8 +209,8 @@ func (a Application) handleDelete(m *tb.Message) {
 	}
 }
 
-// handleStatsAllByMonth allow to get information grouped by months
-func (a Application) handleStatsAllByMonth(m *tb.Message) {
+// handleStatAsTableForAllTime allow to get information grouped by month and categories as table all stats
+func (a Application) handleStatAsTableForAllTime(m *tb.Message) {
 	logrus.Infof("Start handleStatsAllByMonth request with %s by %v", m.Text, m.Sender.ID)
 	if isForbidden(m, a.Bot, a.Config) {
 		return
@@ -214,9 +218,10 @@ func (a Application) handleStatsAllByMonth(m *tb.Message) {
 
 	go Notify(m.Sender, a.Bot, tb.UploadingDocument)
 
-	items, err := a.LogItemRepository.GetAggregatedRecords()
+	items, err := a.LogItemRepository.GetAggregatedRecordsAllTime()
 	if err != nil {
 		logrus.Error(err)
+		return
 	}
 
 	logrus.Infof("Fetch items count %v", len(items))
@@ -232,7 +237,7 @@ func (a Application) handleStatsAllByMonth(m *tb.Message) {
 	itemsForAnalyze := PrepareForAnalyze(items)
 
 	logrus.Info("Call GetMonthAmountStat")
-	monthAmountStat, err := a.StatsClient.GetMonthAmountStat(context.Background(), &stats.LogItemQueryMessage{
+	monthAmountStat, err := a.StatsClient.GetStatAsTable(context.Background(), &stats.LogItemQueryMessage{
 		LogMessagesAggregated: itemsForAnalyze,
 	})
 	if err != nil {
@@ -240,46 +245,63 @@ func (a Application) handleStatsAllByMonth(m *tb.Message) {
 		return
 	}
 
-	fileName := fmt.Sprintf("%v-%v-stat.png", m.Sender.ID, Timestamp())
+	fileName := fmt.Sprintf("%v-%v-stat.pdf", m.Sender.ID, Timestamp())
 	err = SendDocumentFromReader(m.Sender, a.Bot, fileName, monthAmountStat.Res, a.Config)
 	if err != nil {
 		logrus.Error(err)
 	}
+}
+
+// handleStatAsTableForPeriod allow to get information grouped by month and categories as table for period of time
+func (a Application) handleStatAsTableForPeriod(m *tb.Message) {
+	logrus.Infof("Start handleStatAsTableForPeriod request with %s by %v", m.Text, m.Sender.ID)
+	if isForbidden(m, a.Bot, a.Config) {
+		return
+	}
 
 	go Notify(m.Sender, a.Bot, tb.UploadingPhoto)
 
-	logrus.Info("Call GetMonthStat")
-	monthStat, err := a.StatsClient.GetMonthStat(context.Background(), &stats.LogItemQueryMessage{
+	now := time.Now()
+	startFromGivenYear, startFromGivenMonth, _ := now.AddDate(-1, 0, 0).Date()
+	currentLocation := now.Location()
+	firstDayOfMonth := time.Date(startFromGivenYear, startFromGivenMonth, 1, 0, 0, 0, 0, currentLocation)
+
+	items, err := a.LogItemRepository.GetAggregatedRecordsPeriod(firstDayOfMonth.Unix(), now.Unix())
+
+	if err != nil {
+		logrus.Error(err)
+		return
+	}
+
+	logrus.Infof("Fetch items count %v", len(items))
+
+	if len(items) == 0 {
+		err = SendDeletableMessage(m.Sender, a.Bot, "There are not any records yet 😒", a.Config.NotificationTimeout)
+		if err != nil {
+			logrus.Error(err)
+		}
+		return
+	}
+
+	itemsForAnalyze := PrepareForAnalyze(items)
+
+	logrus.Info("Call GetMonthAmountStat")
+	monthAmountStat, err := a.StatsClient.GetStatAsTable(context.Background(), &stats.LogItemQueryMessage{
 		LogMessagesAggregated: itemsForAnalyze,
 	})
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
-
-	logrus.Info("Call GetCategoryStat")
-	categoryStat, err := a.StatsClient.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
-		LogMessagesAggregated: itemsForAnalyze,
-	})
-	if err != nil {
-		logrus.Error(err)
-		return
-	}
-
-	categoryStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(categoryStat.Res))}
-	monthStatDocument := &tb.Photo{File: tb.FromReader(bytes.NewReader(monthStat.Res))}
-
-	err = SendAlbum(m.Sender, a.Bot, tb.Album{monthStatDocument, categoryStatDocument}, a.Config)
+	fileName := fmt.Sprintf("%v-%v-stat.pdf", m.Sender.ID, Timestamp())
+	err = SendDocumentFromReader(m.Sender, a.Bot, fileName, monthAmountStat.Res, a.Config)
 	if err != nil {
 		logrus.Error(err)
 	}
-
-	go DeleteMessage(m, a.Bot, a.Config.NotificationTimeout)
-
 }
 
-// handleStatsByCategoryForCurrentMonth allow to get information grouped by categories for current month
-func (a Application) handleStatsByCategoryForCurrentMonth(m *tb.Message) {
+// handleStatsGroupByCategoryForCurrentMonth allow to get information grouped by categories for current month
+func (a Application) handleStatsGroupByCategoryForCurrentMonth(m *tb.Message) {
 	logrus.Infof("Start HandleStatsByCategoryForCurrentMonth request with %s by %v", m.Text, m.Sender.ID)
 	if isForbidden(m, a.Bot, a.Config) {
 		return
@@ -304,7 +326,7 @@ func (a Application) handleStatsByCategoryForCurrentMonth(m *tb.Message) {
 	}
 
 	logrus.Info("Call GetCategoryStat")
-	stat, err := a.StatsClient.GetCategoryStat(context.Background(), &stats.LogItemQueryMessage{
+	stat, err := a.StatsClient.GetStatGroupByCategory(context.Background(), &stats.LogItemQueryMessage{
 		LogMessagesAggregated: PrepareForAnalyze(items),
 	})
 	if err != nil {

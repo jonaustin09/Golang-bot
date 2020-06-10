@@ -10,7 +10,6 @@ import stats_grpc
 
 from adapter import LogItemAdapter
 from ploting import get_month_stat
-from ploting import get_category_stat
 from ploting import get_month_amount_stat
 
 adapter = LogItemAdapter()
@@ -19,11 +18,11 @@ adapter = LogItemAdapter()
 class Stater(stats_grpc.StatsBase):
 
     @staticmethod
-    async def send_plot(plt, stream):
+    async def send_plot(plt, stream, format='png'):
         fig = plt.get_figure()
 
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', bbox_inches="tight")
+        fig.savefig(buf, format=format, bbox_inches="tight")
         buf.seek(0)
 
         plt.cla()
@@ -31,27 +30,19 @@ class Stater(stats_grpc.StatsBase):
 
         await stream.send_message(stats_pb2.ImageMessage(res=buf.getvalue()))
 
-    async def GetMonthStat(self, stream):
+    async def GetStatGroupByCategory(self, stream):
         request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
         data = adapter.get_items_as_dict(request.LogMessagesAggregated)
         plt = get_month_stat(data)
 
         await self.send_plot(plt, stream)
 
-    async def GetMonthAmountStat(self, stream):
+    async def GetStatAsTable(self, stream):
         request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
         data = adapter.get_items_as_dict(request.LogMessagesAggregated)
         plt = get_month_amount_stat(data)
 
-        await self.send_plot(plt, stream)
-
-    async def GetCategoryStat(self, stream):
-        request: stats_pb2.LogItemQueryMessage = await stream.recv_message()
-        data = adapter.get_items_as_dict(request.LogMessagesAggregated)
-        plt = get_category_stat(data)
-
-        await self.send_plot(plt, stream)
-
+        await self.send_plot(plt, stream, format='pdf')
 
 async def main(*, host='0.0.0.0', port=50051, loop=None):
     loop = loop or asyncio.get_event_loop()

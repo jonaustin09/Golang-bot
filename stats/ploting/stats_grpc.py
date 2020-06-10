@@ -12,33 +12,23 @@ import stats_pb2
 class StatsBase(abc.ABC):
 
     @abc.abstractmethod
-    async def GetMonthStat(self, stream):
+    async def GetStatGroupByCategory(self, stream):
         pass
 
     @abc.abstractmethod
-    async def GetCategoryStat(self, stream):
-        pass
-
-    @abc.abstractmethod
-    async def GetMonthAmountStat(self, stream):
+    async def GetStatAsTable(self, stream):
         pass
 
     def __mapping__(self):
         return {
-            '/stats.Stats/GetMonthStat': grpclib.const.Handler(
-                self.GetMonthStat,
+            '/stats.Stats/GetStatGroupByCategory': grpclib.const.Handler(
+                self.GetStatGroupByCategory,
                 grpclib.const.Cardinality.UNARY_UNARY,
                 stats_pb2.LogItemQueryMessage,
                 stats_pb2.ImageMessage,
             ),
-            '/stats.Stats/GetCategoryStat': grpclib.const.Handler(
-                self.GetCategoryStat,
-                grpclib.const.Cardinality.UNARY_UNARY,
-                stats_pb2.LogItemQueryMessage,
-                stats_pb2.ImageMessage,
-            ),
-            '/stats.Stats/GetMonthAmountStat': grpclib.const.Handler(
-                self.GetMonthAmountStat,
+            '/stats.Stats/GetStatAsTable': grpclib.const.Handler(
+                self.GetStatAsTable,
                 grpclib.const.Cardinality.UNARY_UNARY,
                 stats_pb2.LogItemQueryMessage,
                 stats_pb2.ImageMessage,
@@ -49,21 +39,15 @@ class StatsBase(abc.ABC):
 class StatsStub:
 
     def __init__(self, channel: grpclib.client.Channel) -> None:
-        self.GetMonthStat = grpclib.client.UnaryUnaryMethod(
+        self.GetStatGroupByCategory = grpclib.client.UnaryUnaryMethod(
             channel,
-            '/stats.Stats/GetMonthStat',
+            '/stats.Stats/GetStatGroupByCategory',
             stats_pb2.LogItemQueryMessage,
             stats_pb2.ImageMessage,
         )
-        self.GetCategoryStat = grpclib.client.UnaryUnaryMethod(
+        self.GetStatAsTable = grpclib.client.UnaryUnaryMethod(
             channel,
-            '/stats.Stats/GetCategoryStat',
-            stats_pb2.LogItemQueryMessage,
-            stats_pb2.ImageMessage,
-        )
-        self.GetMonthAmountStat = grpclib.client.UnaryUnaryMethod(
-            channel,
-            '/stats.Stats/GetMonthAmountStat',
+            '/stats.Stats/GetStatAsTable',
             stats_pb2.LogItemQueryMessage,
             stats_pb2.ImageMessage,
         )
