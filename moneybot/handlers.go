@@ -100,6 +100,9 @@ func (a Application) handleNewMessage(m *tb.Message) {
 		if err != nil {
 			logrus.Error(err)
 		}
+
+		go DeleteMessage(m, a.Bot, a.Config.NotificationTimeout)
+
 		return
 
 	}
@@ -250,6 +253,8 @@ func (a Application) handleStatAsTableForAllTime(m *tb.Message) {
 	if err != nil {
 		logrus.Error(err)
 	}
+
+	go DeleteMessage(m, a.Bot, a.Config.NotificationTimeout)
 }
 
 // handleStatAsTableForPeriod allow to get information grouped by month and categories as table for period of time
@@ -298,6 +303,8 @@ func (a Application) handleStatAsTableForPeriod(m *tb.Message) {
 	if err != nil {
 		logrus.Error(err)
 	}
+
+	go DeleteMessage(m, a.Bot, a.Config.NotificationTimeout)
 }
 
 // handleStatsGroupByCategoryForCurrentMonth allow to get information grouped by categories for current month
