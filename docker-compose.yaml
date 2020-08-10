@@ -12,6 +12,7 @@ services:
     working_dir: /go/src/github.com/dobrovolsky/moneybot/
     ports: 
       - 8000:8000
+      - 8081:8081
     depends_on:
       - stats
 

@@ -21,6 +21,7 @@ type Config struct {
 	MonobankToken              string
 	MonobankPort               int
 	ChatID                     int32
+	APIServer                  int
 }
 
 // InitConfig init configurations from file and .env
@@ -55,6 +56,7 @@ func InitConfig() (*Config, error) {
 	config.ChatID = v.GetInt32("CHAT_ID")
 	config.TelegramToken = os.Getenv("TELEGRAM_TOKEN")
 	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
+	config.APIServer = v.GetInt("API_SERVER_PORT")
 
 	config.MonobankIntegrationEnabled = v.GetBool("monobank_integration")
 	if config.MonobankIntegrationEnabled {
