@@ -2,7 +2,7 @@ Commands:
 - `stat_all_by_month` - get statistic based aggregated by month, categories🤓
 - `stat_current_month` - get statistic of your spending based on categories for current month🤓
 - `export` - get your data into csv file 📄
-- `delete` - can delete selected message from log 🌚
+- `delete` or `d` - can delete selected message from log 🌚
 
 ### How to deploy?
 1) run `docker-compose -f docker-compose.yaml up`

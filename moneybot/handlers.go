@@ -41,6 +41,7 @@ func (a Application) setUpHandlers() {
 	a.Bot.Handle("/export", a.handleExport)
 
 	a.Bot.Handle("delete", a.handleDelete)
+	a.Bot.Handle("d", a.handleDelete)
 
 	go a.handleIntegration(a.IntegrationEvents)
 
