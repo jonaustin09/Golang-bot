@@ -1,8 +1,6 @@
 package moneybot
 
 import (
-	"io/ioutil"
-	"os"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -57,27 +55,6 @@ func SendDeletableMessage(to tb.Recipient, b *tb.Bot, d interface{}, displayTime
 	return nil
 }
 
-// SendDocumentFromReader sends bytes as file
-func SendDocumentFromReader(to tb.Recipient, b *tb.Bot, fileName string, file []byte, config Config) error {
-	err := ioutil.WriteFile(fileName, file, 0644)
-	if err != nil {
-		return err
-	}
-	logrus.Info("Create file")
-
-	defer func() {
-		err := os.Remove(fileName)
-		if err != nil {
-			logrus.Error(err)
-		}
-	}()
-
-	document := &tb.Document{File: tb.FromDisk(fileName)}
-	err = SendDeletableMessage(to, b, document, config.NotificationTimeout)
-
-	return err
-}
-
 // Notify notifies user that action is started
 func Notify(to tb.Recipient, b *tb.Bot, action tb.ChatAction) {
 	err := b.Notify(to, action)
@@ -87,9 +64,7 @@ func Notify(to tb.Recipient, b *tb.Bot, action tb.ChatAction) {
 }
 
 func isForbidden(m *tb.Message, b *tb.Bot, config Config) bool {
-	if int32(m.Sender.ID) != config.ChatID {
-		logrus.Infof("chat_id = %d", m.Chat.ID)
-
+	if m.Sender.ID != config.SenderID1 && m.Sender.ID != config.SenderID2 {
 		text := "You can't use this bot. You should deploy it."
 		err := SendDeletableMessage(m.Sender, b, text, config.NotificationTimeout)
 		if err != nil {

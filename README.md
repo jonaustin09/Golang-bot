@@ -1,22 +1,29 @@
+# Money bot
+
+Bot is designed for personal use only.
+
+Allows tracking expenses semi-automatically using Monobank API (wehbooks) for accounts.
+
+Export data via telegram bot or `/api/export`
+
 Commands:
-- `stat_all_by_month` - get statistic based aggregated by month, categories🤓
-- `stat_current_month` - get statistic of your spending based on categories for current month🤓
+
 - `export` - get your data into csv file 📄
-- `delete` or `d` - can delete selected message from log 🌚
+- `delete` or `d` - can delete a selected message from log 🌚
 
-### How to deploy?
-1) run `docker-compose -f docker-compose.yaml up`
+## How to run
 
-#### How to generate proto:
-run command in container: 
-```bash
-protoc -I=stats/proto stats/proto/stats.proto --go_out=plugins=grpc:stats
-```
+- Prepare `.env` file with your data.
+ 
+  ```bash
+  cp env.example .env
+  ```
 
-#### How to create new migrations:
-Read https://github.com/pressly/goose#usage
-run command in container: 
-```bash
-cd migrations
-goose sqlite3 ../db.sqlite3 create <name> sql
-```
+- Install [pressly/goose](https://github.com/pressly/goose)
+  
+  ```bash
+  go get -u github.com/pressly/goose/cmd/goose
+  ```
+
+- Run `make migrate`
+- Run `make linux_build`

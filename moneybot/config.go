@@ -11,16 +11,19 @@ import (
 // Config store configuration params
 type Config struct {
 	DbFile                     string
-	LogIntoFile                bool
-	LogSQL                     bool
 	TelegramToken              string
-	GRPCServer                 string
 	NotificationTimeout        time.Duration
 	MonobankIntegrationEnabled bool
 	MonobankWebhookURL         string
-	MonobankToken              string
+	MonobankToken1             string
+	MonobankToken2             string
 	MonobankPort               int
-	ChatID                     int32
+	MonobankAccount1           string
+	MonobankAccount2           string
+	UserName1                  string
+	UserName2                  string
+	SenderID1                  int
+	SenderID2                  int
 	APIServer                  int
 }
 
@@ -34,8 +37,6 @@ func InitConfig() (*Config, error) {
 	}
 
 	v.SetDefault("db_file", "db.sqlite3")
-	v.SetDefault("enable_file_log", true)
-	v.SetDefault("enable_sql_log", true)
 	v.SetDefault("notification_timeout", 10)
 	v.SetDefault("monobank_integration", false)
 
@@ -50,19 +51,22 @@ func InitConfig() (*Config, error) {
 
 	config := &Config{}
 	config.NotificationTimeout = time.Duration(v.GetInt("notification_timeout")) * time.Second
-	config.LogIntoFile = v.GetBool("enable_file_log")
-	config.LogSQL = v.GetBool("enable_sql_log")
 	config.DbFile = v.GetString("db_file")
-	config.ChatID = v.GetInt32("CHAT_ID")
+	config.UserName1 = v.GetString("USERNAME_1")
+	config.UserName2 = v.GetString("USERNAME_2")
+	config.SenderID1 = v.GetInt("SENDER_ID_1")
+	config.SenderID2 = v.GetInt("SENDER_ID_2")
 	config.TelegramToken = os.Getenv("TELEGRAM_TOKEN")
-	config.GRPCServer = os.Getenv("GRPC_SERVER_ADDRESS")
 	config.APIServer = v.GetInt("API_SERVER_PORT")
 
 	config.MonobankIntegrationEnabled = v.GetBool("monobank_integration")
 	if config.MonobankIntegrationEnabled {
 		config.MonobankWebhookURL = os.Getenv("MONOBANK_WEBHOOK_URL")
-		config.MonobankToken = os.Getenv("MONOBANK_TOKEN")
 		config.MonobankPort = v.GetInt("MONOBANK_PORT")
+		config.MonobankToken1 = os.Getenv("MONOBANK_TOKEN_1")
+		config.MonobankToken2 = os.Getenv("MONOBANK_TOKEN_2")
+		config.MonobankAccount1 = v.GetString("MONOBANK_ACCOUNT_1")
+		config.MonobankAccount2 = v.GetString("MONOBANK_ACCOUNT_2")
 	}
 
 	return config, nil

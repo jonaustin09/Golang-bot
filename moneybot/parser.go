@@ -42,7 +42,7 @@ func (p *Item) HasCategory() bool {
 }
 
 // ProcessSaving saves item to db
-func (p Item) ProcessSaving(messageID int32, sender int32, b *tb.Bot, lr LogItemRepository, config Config) (*LogItem, error) {
+func (p Item) ProcessSaving(messageID int32, sender string, lr LogItemRepository) (*LogItem, error) {
 	var err error
 	if p.Category == "" {
 		p.Category, err = lr.FetchMostRelevantCategory(p.Name)
@@ -50,7 +50,7 @@ func (p Item) ProcessSaving(messageID int32, sender int32, b *tb.Bot, lr LogItem
 			logrus.Error(err)
 		}
 	}
-	logp, err := lr.CreateRecord(p, messageID)
+	logp, err := lr.CreateRecord(p, messageID, sender)
 	if err != nil {
 		return nil, err
 	}
@@ -65,7 +65,7 @@ func SaveItems(items []Item, messageID int32, sender *tb.User, b *tb.Bot, lr Log
 	var text strings.Builder
 
 	for _, item := range items {
-		logp, err := item.ProcessSaving(messageID, int32(sender.ID), b, lr, config)
+		logp, err := item.ProcessSaving(messageID, sender.Username, lr)
 		if err != nil {
 			logrus.Error(err)
 		} else {

@@ -22,6 +22,11 @@ type statementItem struct {
 	Description string `json:"description"`
 }
 
+type BankData struct {
+	Account User
+	Item    Item
+}
+
 func (s statementItem) getCategory() string {
 	if s.Mcc >= 3000 && s.Mcc < 4000 || s.Mcc == 4011 || s.Mcc == 4111 || s.Mcc == 4112 || s.Mcc == 4131 || s.Mcc == 4304 || s.Mcc == 4411 || s.Mcc == 4415 || s.Mcc == 4418 || s.Mcc == 4457 || s.Mcc == 4468 || s.Mcc == 4511 || s.Mcc == 4582 || s.Mcc == 4722 || s.Mcc == 4784 || s.Mcc == 4789 || s.Mcc == 5962 || s.Mcc == 6513 || s.Mcc == 7011 || s.Mcc == 7032 || s.Mcc == 7033 || s.Mcc == 7512 || s.Mcc == 7513 || s.Mcc == 7519 {
 		return "подорожі"
@@ -47,15 +52,17 @@ func (s statementItem) getCategory() string {
 		return "розваги"
 	}
 
-	if s.Mcc == 5172 || s.Mcc == 5511 || s.Mcc == 5532 || s.Mcc == 5533 || s.Mcc == 5541 || s.Mcc == 5542 || s.Mcc == 5983 || s.Mcc == 7511 || s.Mcc == 7523 || s.Mcc == 7531 || s.Mcc == 7534 || s.Mcc == 7535 || s.Mcc == 7538 || s.Mcc == 7542 || s.Mcc == 7549 {
-		return "авто"
-	}
-
 	if s.Mcc == 5131 || s.Mcc == 5137 || s.Mcc == 5139 || s.Mcc == 5611 || s.Mcc == 5621 || s.Mcc == 5631 || s.Mcc == 5641 || s.Mcc == 5651 || s.Mcc == 5655 || s.Mcc == 5661 || s.Mcc == 5681 || s.Mcc == 5691 || s.Mcc == 5697 || s.Mcc == 5698 || s.Mcc == 5699 || s.Mcc == 5931 || s.Mcc == 5948 || s.Mcc == 5949 || s.Mcc == 7251 || s.Mcc == 7296 {
 		return "одяг"
 	}
+
 	if s.Mcc == 4121 {
 		return "транспорт"
+	}
+
+	if s.Mcc == 5172 || s.Mcc == 5511 || s.Mcc == 5532 || s.Mcc == 5533 || s.Mcc == 5541 || s.Mcc == 5542 || s.Mcc == 5983 || s.Mcc == 7511 || s.Mcc == 7523 || s.Mcc == 7531 || s.Mcc == 7534 || s.Mcc == 7535 || s.Mcc == 7538 || s.Mcc == 7542 || s.Mcc == 7549 {
+		// actually this is авто
+		return ""
 	}
 	if s.Mcc == 0742 || s.Mcc == 5995 {
 		// actually this is тварини
@@ -81,6 +88,7 @@ type webhookEvent struct {
 	Type string `json:"type"`
 	Data struct {
 		StatementItem statementItem `json:"statementItem"`
+		Account string `json:"account"`
 	} `json:"data"`
 }
 
@@ -106,7 +114,7 @@ func SetWebhook(token string, url string, port int) error {
 }
 
 // ListenWebhook runs listener for webhook
-func ListenWebhook(port int, monobankEvents chan Item) {
+func ListenWebhook(a Application) {
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(200)
 
@@ -130,6 +138,11 @@ func ListenWebhook(port int, monobankEvents chan Item) {
 			logrus.Error(err)
 			return
 		}
+
+		if event.Data.StatementItem.Amount > 0 {
+			return
+		}
+
 		item := Item{
 			Name:     event.Data.StatementItem.Description,
 			Amount:   event.Data.StatementItem.getNormalizedAmount(),
@@ -143,12 +156,27 @@ func ListenWebhook(port int, monobankEvents chan Item) {
 				item.Name = "transaction"
 			}
 		}
+		var account User
 
-		monobankEvents <- item
+		if event.Data.Account == a.Config.MonobankAccount1 {
+			account = User{
+				ID:       a.Config.SenderID1,
+				Username: a.Config.UserName1,
+			}
+		} else if event.Data.Account == a.Config.MonobankAccount2 {
+			account = User{
+				ID:       a.Config.SenderID2,
+				Username: a.Config.UserName2,
+			}
+		} else {
+			return
+		}
+
+		a.IntegrationEvents <- BankData{Item: item, Account: account}
 	})
 
-	logrus.Info(fmt.Sprintf("listen webhook on: %d", port))
-	err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
+	logrus.Info(fmt.Sprintf("listen webhook on: %d", a.Config.MonobankPort))
+	err := http.ListenAndServe(fmt.Sprintf(":%d", a.Config.MonobankPort), nil)
 	if err != nil {
 		logrus.Error(err)
 	}
